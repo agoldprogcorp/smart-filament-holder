@@ -377,10 +377,9 @@ void setup() {
       else if (value.indexOf("\"cmd\":\"set_profile\"") >= 0) {
         Serial.println("[BLE] Set profile команда получена");
         
-        // Парсим JSON с профилем
+        // ИСПРАВЛЕНИЕ: Используем ArduinoJson вместо indexOf()
         int dataIdx = value.indexOf("\"data\":{");
         if (dataIdx >= 0) {
-          // Извлекаем данные профиля
           int startIdx = value.indexOf("{", dataIdx + 7);
           int endIdx = value.lastIndexOf("}");
           
@@ -388,59 +387,28 @@ void setup() {
             String profileData = value.substring(startIdx, endIdx + 1);
             Serial.printf("[BLE] Profile data: %s\n", profileData.c_str());
             
-            // Парсим поля профиля
-            int idx = profileData.indexOf("\"id\":\"");
-            if (idx >= 0) {
-              idx += 6;
-              currentFilament.id = profileData.substring(idx, profileData.indexOf("\"", idx));
+            // Парсим через ArduinoJson
+            JsonDocument doc;
+            DeserializationError error = deserializeJson(doc, profileData);
+            
+            if (error) {
+              Serial.print("[JSON] Ошибка парсинга BLE профиля: ");
+              Serial.println(error.c_str());
+              return;
             }
             
-            idx = profileData.indexOf("\"material\":\"");
-            if (idx >= 0) {
-              idx += 12;
-              currentFilament.material = profileData.substring(idx, profileData.indexOf("\"", idx));
-              current_material = currentFilament.material;
-            }
+            // Безопасное извлечение данных
+            currentFilament.id = doc["id"] | "";
+            currentFilament.material = doc["material"] | "?";
+            currentFilament.manufacturer = doc["manufacturer"] | "?";
+            currentFilament.weight = doc["weight"] | 0.0f;
+            currentFilament.spool_weight = doc["spool_weight"] | doc["spoolWeight"] | 0.0f;
+            currentFilament.diameter = doc["diameter"] | 1.75f;
+            currentFilament.density = doc["density"] | 1.24f;
+            currentFilament.bed_temp = doc["bed_temp"] | doc["bedTemp"] | 60;
             
-            idx = profileData.indexOf("\"manufacturer\":\"");
-            if (idx >= 0) {
-              idx += 16;
-              currentFilament.manufacturer = profileData.substring(idx, profileData.indexOf("\"", idx));
-              current_manufacturer = currentFilament.manufacturer;
-            }
-            
-            idx = profileData.indexOf("\"weight\":");
-            if (idx >= 0) {
-              idx += 9;
-              currentFilament.weight = profileData.substring(idx, profileData.indexOf(",", idx)).toFloat();
-            }
-            
-            idx = profileData.indexOf("\"spool_weight\":");
-            if (idx < 0) idx = profileData.indexOf("\"spoolWeight\":");
-            if (idx >= 0) {
-              idx = profileData.indexOf(":", idx) + 1;
-              currentFilament.spool_weight = profileData.substring(idx, profileData.indexOf(",", idx)).toFloat();
-            }
-            
-            idx = profileData.indexOf("\"diameter\":");
-            if (idx >= 0) {
-              idx += 11;
-              currentFilament.diameter = profileData.substring(idx, profileData.indexOf(",", idx)).toFloat();
-            }
-            
-            idx = profileData.indexOf("\"density\":");
-            if (idx >= 0) {
-              idx += 10;
-              currentFilament.density = profileData.substring(idx, profileData.indexOf(",", idx)).toFloat();
-            }
-            
-            idx = profileData.indexOf("\"bed_temp\":");
-            if (idx < 0) idx = profileData.indexOf("\"bedTemp\":");
-            if (idx >= 0) {
-              idx = profileData.indexOf(":", idx) + 1;
-              currentFilament.bed_temp = profileData.substring(idx, profileData.indexOf(",", idx)).toInt();
-            }
-            
+            current_material = currentFilament.material;
+            current_manufacturer = currentFilament.manufacturer;
             profile_loaded = true;
             
             Serial.print("[FILAMENT] Загружен через BLE: ");
@@ -572,9 +540,32 @@ void loop() {
   static unsigned long lastNfcCheck = 0;
   static unsigned long lastTimeUpdate = 0;
   static unsigned long lastBleUpdate = 0;
+  static unsigned long lastWifiCheck = 0;
   static bool profileListSent = false; // Флаг отправки списка профилей
   
   unsigned long now = millis();
+  
+  // ИСПРАВЛЕНИЕ: WiFi reconnect каждые 30 секунд
+  if (now - lastWifiCheck > 30000) {
+    lastWifiCheck = now;
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("[WiFi] Переподключение...");
+      WiFi.disconnect();
+      WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+      
+      int attempts = 0;
+      while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+        delay(250);
+        attempts++;
+      }
+      
+      if (WiFi.status() == WL_CONNECTED) {
+        Serial.printf("[WiFi] Переподключено! IP: %s\n", WiFi.localIP().toString().c_str());
+      } else {
+        Serial.println("[WiFi] Не удалось переподключиться");
+      }
+    }
+  }
   
   // Отправка списка профилей после подключения BLE (один раз)
   if (deviceConnected && !profileListSent) {
@@ -1304,6 +1295,7 @@ void checkNFC() {
     }
     uid.toUpperCase();
     
+    // ИСПРАВЛЕНИЕ: Сбрасываем lastNfcUid после успешного чтения
     if (uid != lastNfcUid) {
       lastNfcUid = uid;
       Serial.print("[NFC] Карта: ");
@@ -1316,6 +1308,11 @@ void checkNFC() {
           currentState = STATE_RUNNING;
           Serial.println("[UI] Профиль загружен через NFC, переход в RUNNING");
           load_screen(6);
+          // Сбрасываем UID чтобы можно было прочитать ту же карту снова
+          lastNfcUid = "";
+        } else {
+          // Профиль не найден - тоже сбрасываем чтобы можно было попробовать снова
+          lastNfcUid = "";
         }
       }
     }
@@ -1356,6 +1353,7 @@ void loadFilamentProfile(String filamentId) {
   File file = LittleFS.open("/filaments.json", "r");
   if (!file) {
     Serial.println("[LittleFS] Не удалось открыть filaments.json");
+    profile_loaded = false;
     return;
   }
   
@@ -1371,94 +1369,62 @@ void loadFilamentProfile(String filamentId) {
   }
   file.close();
   
-  if (found) {
-    // Парсим JSON строку
-    int idx = line.indexOf("\"material\":\"");
-    if (idx >= 0) {
-      idx += 12;
-      int end = line.indexOf("\"", idx);
-      currentFilament.material = line.substring(idx, end);
-      current_material = currentFilament.material;
-    }
-    
-    idx = line.indexOf("\"manufacturer\":\"");
-    if (idx >= 0) {
-      idx += 16;
-      int end = line.indexOf("\"", idx);
-      currentFilament.manufacturer = line.substring(idx, end);
-      current_manufacturer = currentFilament.manufacturer;
-    }
-    
-    idx = line.indexOf("\"weight\":");
-    if (idx >= 0) {
-      idx += 9;
-      currentFilament.weight = line.substring(idx, line.indexOf(",", idx)).toFloat();
-    }
-    
-    idx = line.indexOf("\"spool_weight\":");
-    if (idx < 0) {
-      idx = line.indexOf("\"spoolWeight\":");
-      if (idx >= 0) idx += 14;
-    } else {
-      idx += 15;
-    }
-    if (idx >= 0) {
-      currentFilament.spool_weight = line.substring(idx, line.indexOf(",", idx)).toFloat();
-    }
-    
-    idx = line.indexOf("\"length\":");
-    if (idx >= 0) {
-      idx += 9;
-      currentFilament.length = line.substring(idx, line.indexOf(",", idx)).toInt();
-      current_length = currentFilament.length;
-    }
-    
-    idx = line.indexOf("\"diameter\":");
-    if (idx >= 0) {
-      idx += 11;
-      currentFilament.diameter = line.substring(idx, line.indexOf(",", idx)).toFloat();
-    }
-    
-    idx = line.indexOf("\"density\":");
-    if (idx >= 0) {
-      idx += 10;
-      currentFilament.density = line.substring(idx, line.indexOf(",", idx)).toFloat();
-    }
-    
-    idx = line.indexOf("\"bed_temp\":");
-    if (idx < 0) {
-      idx = line.indexOf("\"bedTemp\":");
-      if (idx >= 0) idx += 10;
-    } else {
-      idx += 11;
-    }
-    if (idx >= 0) {
-      currentFilament.bed_temp = line.substring(idx, line.indexOf(",", idx)).toInt();
-    }
-    
-    currentFilament.id = filamentId;
-    profile_loaded = true;
-    
-    Serial.print("[FILAMENT] Загружен: ");
-    Serial.print(currentFilament.material);
-    Serial.print(" (");
-    Serial.print(currentFilament.manufacturer);
-    Serial.println(")");
-    
-    // Переход в STATE_RUNNING если есть катушка на весах
-    if (currentWeight > MIN_SPOOL_WEIGHT) {
-      currentState = STATE_RUNNING;
-      Serial.println("[UI] Профиль загружен, переход в RUNNING");
-      load_screen(6);
-    } else {
-      Serial.println("[UI] Профиль загружен, но катушка не обнаружена (вес < MIN_SPOOL_WEIGHT)");
-      // Остаемся на текущем экране, профиль сохранен и будет использован когда катушку положат
-    }
-    
-    saveLastFilament();
-  } else {
+  if (!found) {
     Serial.println("[FILAMENT] Профиль не найден");
+    profile_loaded = false;
+    
+    // UI FEEDBACK: Показываем сообщение пользователю
+    if (currentState == STATE_WAIT_NFC) {
+      Serial.println("[UI] NFC карта не распознана - профиль не найден в базе");
+      // TODO: Можно добавить временное сообщение на экране
+    }
+    return;
   }
+  
+  // ИСПРАВЛЕНИЕ: Используем ArduinoJson вместо indexOf()
+  JsonDocument doc;
+  DeserializationError error = deserializeJson(doc, line);
+  
+  if (error) {
+    Serial.print("[JSON] Ошибка парсинга: ");
+    Serial.println(error.c_str());
+    profile_loaded = false;
+    return;
+  }
+  
+  // Безопасное извлечение данных через ArduinoJson
+  currentFilament.id = filamentId;
+  currentFilament.material = doc["material"] | "?";
+  currentFilament.manufacturer = doc["manufacturer"] | "?";
+  currentFilament.weight = doc["weight"] | 0.0f;
+  currentFilament.spool_weight = doc["spool_weight"] | doc["spoolWeight"] | 0.0f;
+  currentFilament.length = doc["length"] | 0;
+  currentFilament.diameter = doc["diameter"] | 1.75f;
+  currentFilament.density = doc["density"] | 1.24f;
+  currentFilament.bed_temp = doc["bed_temp"] | doc["bedTemp"] | 60;
+  
+  current_material = currentFilament.material;
+  current_manufacturer = currentFilament.manufacturer;
+  current_length = currentFilament.length;
+  profile_loaded = true;
+  
+  Serial.print("[FILAMENT] Загружен: ");
+  Serial.print(currentFilament.material);
+  Serial.print(" (");
+  Serial.print(currentFilament.manufacturer);
+  Serial.println(")");
+  
+  // Переход в STATE_RUNNING если есть катушка на весах
+  if (currentWeight > MIN_SPOOL_WEIGHT) {
+    currentState = STATE_RUNNING;
+    Serial.println("[UI] Профиль загружен, переход в RUNNING");
+    load_screen(6);
+  } else {
+    Serial.println("[UI] Профиль загружен, но катушка не обнаружена (вес < MIN_SPOOL_WEIGHT)");
+    // Остаемся на текущем экране, профиль сохранен и будет использован когда катушку положат
+  }
+  
+  saveLastFilament();
 }
 
 // Сохранение последнего профиля в кэш

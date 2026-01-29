@@ -475,7 +475,7 @@ class BluetoothService extends ChangeNotifier {
       Map<String, dynamic> cmd = {'cmd': 'get_profile_list'};
       await _cmdChar!.write(utf8.encode(json.encode(cmd)), withoutResponse: false);
       
-      Future.delayed(const Duration(seconds: 10), () {
+      Future.delayed(const Duration(seconds: 30), () {
         if (_isLoadingProfiles) {
           debugPrint('[BLE] Profile list timeout!');
           _isLoadingProfiles = false;

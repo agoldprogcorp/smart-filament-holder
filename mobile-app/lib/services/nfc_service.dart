@@ -22,6 +22,8 @@ class NfcService {
         pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso15693},
         onDiscovered: (NfcTag tag) async {
           try {
+            // ИСПРАВЛЕНИЕ: Пишем только ID в raw формат (совместимо с ESP32)
+            // ESP32 читает блок 4 как raw 16 байт
             final ndef = NdefAndroid.from(tag);
             if (ndef == null || !ndef.isWritable) {
               debugPrint('NFC: Tag is not writable');
@@ -30,25 +32,12 @@ class NfcService {
               return;
             }
 
-            final jsonData = json.encode({
-              'id': filament.id,
-              'manufacturer': filament.manufacturer,
-              'material': filament.material,
-              'density': filament.density,
-              'weight': filament.weight,
-              'spoolWeight': filament.spoolWeight,
-              'diameter': filament.diameter,
-              'bedTemp': filament.bedTemp,
-            });
-
-            // Создаём текстовую запись
-            final languageCode = 'en';
-            final languageCodeBytes = Uint8List.fromList(languageCode.codeUnits);
-            final textBytes = Uint8List.fromList(utf8.encode(jsonData));
-            final payload = Uint8List(1 + languageCodeBytes.length + textBytes.length);
-            payload[0] = languageCodeBytes.length;
-            payload.setRange(1, 1 + languageCodeBytes.length, languageCodeBytes);
-            payload.setRange(1 + languageCodeBytes.length, payload.length, textBytes);
+            // Создаём простую текстовую запись с ID (максимум 16 байт)
+            final idBytes = utf8.encode(filament.id);
+            final payload = Uint8List(16);
+            // Копируем ID в payload (максимум 16 байт)
+            final len = idBytes.length > 16 ? 16 : idBytes.length;
+            payload.setRange(0, len, idBytes);
 
             final message = NdefMessage(
               records: [
@@ -56,12 +45,13 @@ class NfcService {
                   typeNameFormat: TypeNameFormat.wellKnown,
                   type: Uint8List.fromList([0x54]), // 'T' for Text
                   identifier: Uint8List(0),
-                  payload: payload,
+                  payload: Uint8List.fromList([0x02, 0x65, 0x6E, ...payload]), // 0x02 = UTF-8, 'en'
                 ),
               ],
             );
 
             await ndef.writeNdefMessage(message);
+            debugPrint('NFC: Written ID: ${filament.id}');
             await NfcManager.instance.stopSession();
             onSuccess?.call();
           } catch (e) {
