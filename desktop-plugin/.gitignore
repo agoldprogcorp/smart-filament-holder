@@ -1,0 +1,10 @@
+build/
+dist/
+*.spec
+__pycache__/
+*.pyc
+venv/
+.env
+debug_gcode.py
+find_slice_file.py
+setup.py

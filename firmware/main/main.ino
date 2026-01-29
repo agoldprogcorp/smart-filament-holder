@@ -1,0 +1,1965 @@
+/*
+ * Smart Filament Holder
+ * ESP32-C6 + GC9A01 + LVGL
+ * 
+ * Debug commands (DEBUG_MODE):
+ * 1-6    - switch screen
+ * w850   - set weight 850g
+ * t      - tare
+ * profile / noprofile - toggle profile
+ */
+
+#include <lvgl.h>
+#include <Arduino_GFX_Library.h>
+#include <SPI.h>
+#include <Wire.h>
+#include <WiFi.h>
+#include <WebServer.h>
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
+#include <MFRC522.h>
+#include <HX711.h>
+#include <LittleFS.h>
+#include <ArduinoJson.h>
+
+#include "config.h"
+
+#define TOUCH_I2C_ADDR 0x15
+
+struct TouchPoint {
+  int16_t x;
+  int16_t y;
+  bool touched;
+} touchPoint;
+
+volatile bool touch_flag = false;
+
+void IRAM_ATTR touch_interrupt() {
+  touch_flag = true;
+}
+
+void touch_init();
+void touch_read();
+void my_touchpad_read(lv_indev_t *indev_drv, lv_indev_data_t *data);
+
+Arduino_DataBus *bus = new Arduino_ESP32SPI(LCD_DC, LCD_CS, LCD_SCK, LCD_MOSI, -1);
+Arduino_GC9A01 *gfx = new Arduino_GC9A01(bus, LCD_RST, 0, true);
+
+MFRC522 rfid(RC522_CS, RC522_RST);
+HX711 scale;
+WebServer server(HTTP_PORT);
+BLEServer* pServer = NULL;
+BLECharacteristic* pDataChar = NULL;
+BLECharacteristic* pCommandChar = NULL;
+BLECharacteristic* pDbSyncChar = NULL;
+
+static lv_display_t *disp;
+static lv_indev_t *indev;
+static uint8_t buf1[LCD_WIDTH * 40 * 2];
+
+lv_obj_t* screen_boot;
+lv_obj_t* screen_wait_spool;
+lv_obj_t* screen_select_method;
+lv_obj_t* screen_wait_nfc;
+lv_obj_t* screen_wait_app;
+lv_obj_t* screen_running;
+
+lv_obj_t* arc_progress;
+lv_obj_t* label_material;
+lv_obj_t* label_manufacturer;
+lv_obj_t* label_percent_main;
+lv_obj_t* label_percent_decimal;
+lv_obj_t* label_percent_sign;
+lv_obj_t* label_weight_title;
+lv_obj_t* label_weight_value;
+lv_obj_t* label_length_title;
+lv_obj_t* label_length_value;
+lv_obj_t* label_time;
+
+struct FilamentData {
+  String id = "";
+  String material = "";
+  String manufacturer = "";
+  float weight = 0.0f;
+  float spool_weight = 0.0f;
+  int length = 0;
+  float diameter = 1.75f;
+  float density = 1.24f;
+  int bed_temp = 60;
+} currentFilament;
+
+float currentWeight = 0.0f;
+float netWeight = 0.0f;
+float current_percent = 75.5f;
+int current_length = 250;
+int current_screen = 1;
+String current_material = "PLA";
+String current_manufacturer = "LIDER-3D";
+bool profile_loaded = false;
+bool deviceConnected = false;
+String lastNfcUid = "";
+
+enum UIState {
+  STATE_BOOT = 1,
+  STATE_WAIT_SPOOL = 2,
+  STATE_SELECT_METHOD = 3,
+  STATE_WAIT_NFC = 4,
+  STATE_WAIT_APP = 5,
+  STATE_RUNNING = 6
+};
+UIState currentState = STATE_BOOT;
+
+void my_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map);
+void create_all_screens();
+void load_screen(int screen_num);
+void update_weight(float weight);
+void update_percent(float percent);
+void update_length(int length);
+void update_time();
+void update_material_and_manufacturer();
+void btn_nfc_event(lv_event_t* e);
+void btn_app_event(lv_event_t* e);
+void btn_back_event(lv_event_t* e);
+
+void updateWeightSensor();
+void checkNFC();
+void handleData();
+void handleStatus();
+void handleTare();
+void sendBLEData();
+void sendProfileList();
+void sendFullProfile(String filamentId);
+bool addProfileToDatabase(String profileJson);
+String readNfcData();
+bool writeNfcData(String filamentId);
+float calculateLength(float weight_g, float diameter_mm, float density);
+void loadFilamentProfile(String filamentId);
+void saveLastFilament();
+void loadLastFilament();
+void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data);
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  
+  Serial.println("\nSmart Filament Holder");
+  Serial.println("ESP32-C6 + GC9A01 + LVGL\n");
+  
+  Serial.print("[1/8] LittleFS... ");
+  if (!LittleFS.begin(true)) {
+    Serial.println("ERROR: LittleFS mount failed");
+  } else {
+    Serial.println("OK");
+    Serial.println("[LittleFS] Files:");
+    File root = LittleFS.open("/");
+    File f = root.openNextFile();
+    int count = 0;
+    while(f) {
+      Serial.printf("  - %s (%u bytes)\n", f.name(), f.size());
+      f = root.openNextFile();
+      count++;
+    }
+    if (count == 0) {
+      Serial.println("  (empty)");
+    }
+    Serial.printf("[LittleFS] Free heap: %d bytes\n", ESP.getFreeHeap());
+  }
+  
+  // Дисплей
+  Serial.print("[2/8] Дисплей... ");
+  gfx->begin();
+  gfx->fillScreen(0x0000);
+  pinMode(LCD_BL, OUTPUT);
+  digitalWrite(LCD_BL, HIGH);
+  Serial.println("✓");
+  
+  // LVGL
+  Serial.print("[3/8] LVGL... ");
+  lv_init();
+  
+  // LVGL v9 API - создание дисплея
+  disp = lv_display_create(LCD_WIDTH, LCD_HEIGHT);
+  lv_display_set_buffers(disp, buf1, NULL, sizeof(buf1), LV_DISPLAY_RENDER_MODE_PARTIAL);
+  lv_display_set_flush_cb(disp, my_disp_flush);
+
+  Serial.println("✓");
+
+  // Тачскрин - СНАЧАЛА ИНИЦИАЛИЗАЦИЯ I2C
+  Serial.print("[3.5/8] Тачскрин (CST816S)... ");
+  
+  // Сначала сканируем I2C
+  Serial.println();
+  Serial.println("[I2C] Сканирование шины...");
+  Wire.begin(TP_SDA, TP_SCL);
+  Wire.setClock(400000);
+  
+  byte count = 0;
+  for (byte i = 1; i < 127; i++) {
+    Wire.beginTransmission(i);
+    if (Wire.endTransmission() == 0) {
+      Serial.printf("[I2C] Найдено устройство: 0x%02X\n", i);
+      count++;
+    }
+  }
+  Serial.printf("[I2C] Всего найдено: %d устройств\n", count);
+  
+  touch_init();
+  Serial.println("✓");
+
+  // Touch input - ПОТОМ РЕГИСТРАЦИЯ В LVGL
+  Serial.print("[3.6/8] Регистрация LVGL input... ");
+  
+  // LVGL v9 API - создание input device
+  indev = lv_indev_create();
+  lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
+  lv_indev_set_read_cb(indev, my_touchpad_read);
+  
+  if (indev == NULL) {
+    Serial.println("✗ ОШИБКА регистрации!");
+  } else {
+    Serial.printf("✓ (indev=%p)\n", (void*)indev);
+  }
+  
+  // UI
+  Serial.print("[4/8] Создание экранов... ");
+  create_all_screens();
+  load_screen(1);  // BOOT
+  Serial.println("✓");
+  
+  // RC522 (NFC)
+  Serial.print("[5/8] NFC (RC522)... ");
+  SPI.end();
+  SPI.begin(LCD_SCK, RC522_MISO, LCD_MOSI, RC522_CS);
+  rfid.PCD_Init();
+  
+  byte version = rfid.PCD_ReadRegister(rfid.VersionReg);
+  if (version != 0x00 && version != 0xFF) {
+    Serial.printf("✓ (v0x%02X)\n", version);
+  } else {
+    Serial.println("✗");
+  }
+  
+  // Возврат SPI для дисплея
+  SPI.end();
+  SPI.begin(LCD_SCK, -1, LCD_MOSI, LCD_CS);
+  SPI.setDataMode(SPI_MODE0);
+  SPI.setBitOrder(MSBFIRST);
+  SPI.setFrequency(40000000);
+  
+  // HX711
+  #if !DEBUG_MODE
+  Serial.print("[6/8] HX711 (Тензодатчик)... ");
+  scale.begin(HX711_DOUT, HX711_SCK);
+  
+  // Проверяем готовность БЕЗ блокировки
+  delay(100);
+  if (scale.is_ready()) {
+    scale.set_scale(CALIBRATION_FACTOR);
+    scale.tare(10);
+    Serial.println("✓");
+  } else {
+    Serial.println("✗ Не подключен (продолжаем без него)");
+  }
+  #else
+  Serial.println("[6/8] HX711 (DEBUG MODE)");
+  Serial.println("     Команды: w<число> или t");
+  #endif
+  
+  // WiFi
+  Serial.print("[7/8] WiFi... ");
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  
+  Serial.printf("\n[WiFi] Подключение к %s", WIFI_SSID);
+  
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_TIMEOUT) {
+    delay(250);
+    Serial.print(".");
+    attempts++;
+  }
+  Serial.println();
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.printf("✓ IP: %s\n", WiFi.localIP().toString().c_str());
+    Serial.printf("[WiFi] MAC: %s\n", WiFi.macAddress().c_str());
+    Serial.printf("[WiFi] RSSI: %d dBm\n", WiFi.RSSI());
+    
+    // HTTP Server
+    server.on("/data", handleData);
+    server.on("/status", handleStatus);
+    server.on("/tare", HTTP_POST, handleTare);
+    server.begin();
+    Serial.printf("[HTTP] Сервер запущен на порту %d\n", HTTP_PORT);
+  } else {
+    Serial.println("✗ Не удалось подключиться");
+    Serial.printf("[WiFi] Статус: %d\n", WiFi.status());
+  }
+  
+  // BLE
+  Serial.print("[8/8] BLE... ");
+  BLEDevice::init(DEVICE_NAME);
+  BLEDevice::setMTU(512);
+  pServer = BLEDevice::createServer();
+  
+  // BLE Server Callbacks
+  class MyServerCallbacks: public BLEServerCallbacks {
+    void onConnect(BLEServer* pServer) {
+      deviceConnected = true;
+      Serial.println("\n[BLE] Подключено");
+    }
+    void onDisconnect(BLEServer* pServer) {
+      deviceConnected = false;
+      Serial.println("\n[BLE] Отключено");
+      pServer->startAdvertising();
+    }
+  };
+  
+  // Создаём callback один раз (статический)
+  static MyServerCallbacks serverCallbacks;
+  pServer->setCallbacks(&serverCallbacks);
+  
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+  
+  pDataChar = pService->createCharacteristic(
+    DATA_CHAR_UUID,
+    BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY
+  );
+  pDataChar->addDescriptor(new BLE2902()); // Добавляем дескриптор для notify
+  
+  pCommandChar = pService->createCharacteristic(
+    COMMAND_CHAR_UUID,
+    BLECharacteristic::PROPERTY_WRITE
+  );
+  
+  pDbSyncChar = pService->createCharacteristic(
+    DB_SYNC_CHAR_UUID,
+    BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY
+  );
+  pDbSyncChar->addDescriptor(new BLE2902()); // Добавляем дескриптор для notify
+  
+  class MyCharCallbacks: public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *pCharacteristic) {
+      String value = pCharacteristic->getValue().c_str();
+      Serial.printf("[BLE] Получено: %s\n", value.c_str());
+      
+      // Команда TARE
+      if (value.indexOf("\"cmd\":\"tare\"") >= 0 || value.indexOf("tare") >= 0) {
+        #if !DEBUG_MODE
+        scale.tare(10);
+        #else
+        currentWeight = 0;
+        #endif
+        Serial.println("[BLE] Tare выполнен");
+      }
+      // Команда LOAD_FILAMENT
+      else if (value.indexOf("\"cmd\":\"load_filament\"") >= 0 || value.indexOf("filament_id") >= 0) {
+        int idx = value.indexOf("filament_id\":\"");
+        if (idx >= 0) {
+          idx += 14;
+          String id = value.substring(idx, value.indexOf("\"", idx));
+          loadFilamentProfile(id);
+        }
+      }
+      // Команда WRITE_NFC
+      else if (value.indexOf("\"cmd\":\"write_nfc\"") >= 0) {
+        int idx = value.indexOf("\"id\":\"");
+        if (idx >= 0) {
+          idx += 6;
+          String id = value.substring(idx, value.indexOf("\"", idx));
+          bool success = writeNfcData(id);
+          Serial.printf("[NFC] Запись %s\n", success ? "успешна" : "неудачна");
+        }
+      }
+      // Команда SET_PROFILE (полный профиль в JSON)
+      else if (value.indexOf("\"cmd\":\"set_profile\"") >= 0) {
+        Serial.println("[BLE] Set profile команда получена");
+        
+        // Парсим JSON с профилем
+        int dataIdx = value.indexOf("\"data\":{");
+        if (dataIdx >= 0) {
+          // Извлекаем данные профиля
+          int startIdx = value.indexOf("{", dataIdx + 7);
+          int endIdx = value.lastIndexOf("}");
+          
+          if (startIdx >= 0 && endIdx > startIdx) {
+            String profileData = value.substring(startIdx, endIdx + 1);
+            Serial.printf("[BLE] Profile data: %s\n", profileData.c_str());
+            
+            // Парсим поля профиля
+            int idx = profileData.indexOf("\"id\":\"");
+            if (idx >= 0) {
+              idx += 6;
+              currentFilament.id = profileData.substring(idx, profileData.indexOf("\"", idx));
+            }
+            
+            idx = profileData.indexOf("\"material\":\"");
+            if (idx >= 0) {
+              idx += 12;
+              currentFilament.material = profileData.substring(idx, profileData.indexOf("\"", idx));
+              current_material = currentFilament.material;
+            }
+            
+            idx = profileData.indexOf("\"manufacturer\":\"");
+            if (idx >= 0) {
+              idx += 16;
+              currentFilament.manufacturer = profileData.substring(idx, profileData.indexOf("\"", idx));
+              current_manufacturer = currentFilament.manufacturer;
+            }
+            
+            idx = profileData.indexOf("\"weight\":");
+            if (idx >= 0) {
+              idx += 9;
+              currentFilament.weight = profileData.substring(idx, profileData.indexOf(",", idx)).toFloat();
+            }
+            
+            idx = profileData.indexOf("\"spool_weight\":");
+            if (idx < 0) idx = profileData.indexOf("\"spoolWeight\":");
+            if (idx >= 0) {
+              idx = profileData.indexOf(":", idx) + 1;
+              currentFilament.spool_weight = profileData.substring(idx, profileData.indexOf(",", idx)).toFloat();
+            }
+            
+            idx = profileData.indexOf("\"diameter\":");
+            if (idx >= 0) {
+              idx += 11;
+              currentFilament.diameter = profileData.substring(idx, profileData.indexOf(",", idx)).toFloat();
+            }
+            
+            idx = profileData.indexOf("\"density\":");
+            if (idx >= 0) {
+              idx += 10;
+              currentFilament.density = profileData.substring(idx, profileData.indexOf(",", idx)).toFloat();
+            }
+            
+            idx = profileData.indexOf("\"bed_temp\":");
+            if (idx < 0) idx = profileData.indexOf("\"bedTemp\":");
+            if (idx >= 0) {
+              idx = profileData.indexOf(":", idx) + 1;
+              currentFilament.bed_temp = profileData.substring(idx, profileData.indexOf(",", idx)).toInt();
+            }
+            
+            profile_loaded = true;
+            
+            Serial.print("[FILAMENT] Загружен через BLE: ");
+            Serial.print(currentFilament.material);
+            Serial.print(" (");
+            Serial.print(currentFilament.manufacturer);
+            Serial.println(")");
+            
+            // Переход в STATE_RUNNING если есть катушка на весах
+            if (currentWeight > MIN_SPOOL_WEIGHT) {
+              currentState = STATE_RUNNING;
+              Serial.println("[UI] Профиль загружен через BLE, переход в RUNNING");
+              load_screen(6);
+            } else {
+              Serial.println("[UI] Профиль загружен, но катушка не обнаружена (вес < MIN_SPOOL_WEIGHT)");
+              // Остаемся на текущем экране, профиль сохранен и будет использован когда катушку положат
+            }
+            
+            saveLastFilament();
+          }
+        }
+      }
+      // Команда GET_PROFILE_LIST (отправить список всех профилей)
+      else if (value.indexOf("\"cmd\":\"get_profile_list\"") >= 0) {
+        Serial.println("[BLE] Запрос списка профилей");
+        sendProfileList();
+      }
+      // Команда GET_PROFILE (отправить полный профиль по ID)
+      else if (value.indexOf("\"cmd\":\"get_profile\"") >= 0) {
+        int idx = value.indexOf("\"id\":\"");
+        if (idx >= 0) {
+          idx += 6;
+          String id = value.substring(idx, value.indexOf("\"", idx));
+          Serial.printf("[BLE] Запрос профиля: %s\n", id.c_str());
+          sendFullProfile(id);
+        }
+      }
+      // Команда ADD_PROFILE (добавить новый профиль в базу)
+      else if (value.indexOf("\"cmd\":\"add_profile\"") >= 0) {
+        Serial.println("[BLE] Добавление нового профиля");
+        
+        int dataIdx = value.indexOf("\"data\":{");
+        if (dataIdx >= 0) {
+          int startIdx = value.indexOf("{", dataIdx + 7);
+          int endIdx = value.lastIndexOf("}");
+          
+          if (startIdx >= 0 && endIdx > startIdx) {
+            String profileData = value.substring(startIdx, endIdx + 1);
+            bool success = addProfileToDatabase(profileData);
+            
+            // Отправляем подтверждение
+            String response = "{\"cmd\":\"add_profile_response\",\"success\":";
+            response += success ? "true" : "false";
+            response += "}";
+            pDbSyncChar->setValue(response.c_str());
+            pDbSyncChar->notify();
+            
+            Serial.printf("[DB] Профиль %s\n", success ? "добавлен" : "не добавлен");
+          }
+        }
+      }
+    }
+  };
+  
+  static MyCharCallbacks charCallbacks;
+  pCommandChar->setCallbacks(&charCallbacks);
+  
+  pService->start();
+  
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->setScanResponse(true);
+  BLEDevice::startAdvertising();
+  
+  Serial.printf("✓ (%s)\n", DEVICE_NAME);
+  
+  // Загрузка последнего профиля
+  // loadLastFilament();
+  
+  // Определяем начальное состояние - НЕ ПЕРЕХОДИМ В RUNNING АВТОМАТИЧЕСКИ
+  delay(1000);
+  profile_loaded = false;  // ВАЖНО: сбрасываем!
+
+  if (currentWeight > MIN_SPOOL_WEIGHT) {
+      currentState = STATE_SELECT_METHOD;
+      load_screen(3);
+      Serial.println("[INIT] Катушка обнаружена, показываем выбор метода");
+  } else {
+      currentState = STATE_WAIT_SPOOL;
+      load_screen(2);
+      Serial.println("[INIT] Ожидание катушки");
+  }
+  
+  Serial.println("\n╔════════════════════════════════════╗");
+  Serial.println("║  ГОТОВО!                          ║");
+  Serial.println("╚════════════════════════════════════╝");
+  Serial.println("\nКоманды:");
+  Serial.println("  1-6    - переключить экран");
+  Serial.println("  w850   - вес 850g");
+  Serial.println("  t      - tare");
+  Serial.println("  p75.5  - процент 75.5%");
+  Serial.println("  l250   - длина 250m");
+  Serial.println("  profile / noprofile");
+  Serial.println("  id <filament_id> - загрузить профиль");
+  Serial.println("    Пример: id 3d-fuel_pla+_1000.0_1.75");
+  Serial.println();
+}
+
+// ============================================
+// LOOP
+// ============================================
+void loop() {
+  lv_tick_inc(5);  // Добавляем 5ms к таймеру LVGL
+  lv_timer_handler();
+
+  // ТЕСТ: Прямой вызов функции тачскрина каждые 2 секунды
+  static unsigned long lastTouchTest = 0;
+  if (millis() - lastTouchTest > 2000) {
+    lastTouchTest = millis();
+
+    lv_indev_data_t test_data;
+    my_touchpad_read(NULL, &test_data);
+
+    Serial.printf("[TEST] Result: state=%d, x=%d, y=%d\n",
+                  test_data.state, test_data.point.x, test_data.point.y);
+  }
+  
+  static unsigned long lastWeightUpdate = 0;
+  static unsigned long lastNfcCheck = 0;
+  static unsigned long lastTimeUpdate = 0;
+  static unsigned long lastBleUpdate = 0;
+  static bool profileListSent = false; // Флаг отправки списка профилей
+  
+  unsigned long now = millis();
+  
+  // Отправка списка профилей после подключения BLE (один раз)
+  if (deviceConnected && !profileListSent) {
+    static unsigned long connectTime = 0;
+    if (connectTime == 0) {
+      connectTime = now;
+    }
+    // Ждём 1 секунду после подключения
+    if (now - connectTime > 1000) {
+      Serial.println("[BLE] Отправка списка профилей...");
+      sendProfileList();
+      profileListSent = true;
+      connectTime = 0;
+    }
+  }
+  
+  // Сброс флага при отключении
+  if (!deviceConnected && profileListSent) {
+    profileListSent = false;
+  }
+  
+  // Обновление веса (каждые WEIGHT_UPDATE_INTERVAL ms)
+  if (now - lastWeightUpdate > WEIGHT_UPDATE_INTERVAL) {
+    lastWeightUpdate = now;
+    updateWeightSensor();
+  }
+  
+  // Проверка NFC (каждые NFC_CHECK_INTERVAL ms)
+  if (now - lastNfcCheck > NFC_CHECK_INTERVAL) {
+    lastNfcCheck = now;
+    checkNFC();
+  }
+  
+  // Обновление времени (каждые TIME_UPDATE_INTERVAL ms)
+  if (now - lastTimeUpdate > TIME_UPDATE_INTERVAL) {
+    lastTimeUpdate = now;
+    update_time();
+  }
+  
+  // BLE отправка данных (каждые BLE_UPDATE_INTERVAL ms)
+  if (deviceConnected && now - lastBleUpdate > BLE_UPDATE_INTERVAL) {
+    lastBleUpdate = now;
+    sendBLEData();
+  }
+  
+  // HTTP сервер
+  server.handleClient();
+  
+  // Serial команды
+  if (Serial.available()) {
+    String cmd = Serial.readStringUntil('\n');
+    cmd.trim();
+    
+    Serial.print("Получена команда: [");
+    Serial.print(cmd);
+    Serial.println("]");
+    
+    if (cmd == "profile") {
+      profile_loaded = true;
+      Serial.println("→ Профиль загружен");
+      if (current_screen == 6) {
+        update_material_and_manufacturer();
+        update_percent(current_percent);
+        update_length(current_length);
+      }
+    }
+    else if (cmd == "noprofile") {
+      profile_loaded = false;
+      Serial.println("→ Профиль убран (показываем '?')");
+      if (current_screen == 6) {
+        update_material_and_manufacturer();
+        update_percent(current_percent);
+        update_length(current_length);
+      }
+    }
+    else if (cmd.length() == 1 && cmd[0] >= '1' && cmd[0] <= '6') {
+      int screen = cmd[0] - '0';
+      load_screen(screen);
+      Serial.printf("→ Экран %d загружен\n", screen);
+    }
+    else if (cmd.startsWith("w")) {
+      float weight = cmd.substring(1).toFloat();
+      currentWeight = weight;
+      currentWeight = weight;
+      update_weight(weight);
+      Serial.printf("→ Вес обновлен: %.0fg\n", weight);
+    }
+    else if (cmd == "t") {
+      currentWeight = 0;
+      update_weight(0);
+      Serial.println("→ Tare");
+    }
+    else if (cmd.startsWith("p")) {
+      float percent = cmd.substring(1).toFloat();
+      update_percent(percent);
+      Serial.printf("→ Процент обновлен: %.1f%%\n", percent);
+    }
+    else if (cmd.startsWith("l")) {
+      int length = cmd.substring(1).toInt();
+      update_length(length);
+      Serial.printf("→ Длина обновлена: %dm\n", length);
+    }
+    else if (cmd.startsWith("id ")) {
+      // Загрузка профиля по ID: id 3d-fuel_pla+_1000.0_1.75
+      String filamentId = cmd.substring(3);
+      filamentId.trim();
+      Serial.printf("→ Загрузка профиля: %s\n", filamentId.c_str());
+      loadFilamentProfile(filamentId);
+      
+      if (profile_loaded) {
+        // Переходим на экран 6 и обновляем данные
+        currentState = STATE_RUNNING;
+        load_screen(6);
+        
+        if (currentFilament.weight > 0) {
+          float filamentOnly = currentFilament.weight - currentFilament.spool_weight;
+          float percent = (netWeight / filamentOnly) * 100.0f;
+          if (percent > 100) percent = 100;
+          if (percent < 0) percent = 0;
+          current_percent = percent;
+          update_percent(percent);
+          
+          if (currentFilament.diameter > 0 && currentFilament.density > 0) {
+            int length = (int)calculateLength(netWeight, currentFilament.diameter, currentFilament.density);
+            current_length = length;
+            update_length(length);
+          }
+        }
+        
+        update_material_and_manufacturer();
+        Serial.println("→ Profile loaded");
+      } else {
+        Serial.println("→ Профиль не найден!");
+      }
+    }
+    else {
+      Serial.println("→ Неизвестная команда!");
+    }
+  }
+  
+  delay(5);
+}
+
+// ============================================
+// CALLBACK ДИСПЛЕЯ (LVGL v9)
+// ============================================
+void my_disp_flush(lv_display_t *disp_drv, const lv_area_t *area, uint8_t *px_map) {
+  uint32_t w = lv_area_get_width(area);
+  uint32_t h = lv_area_get_height(area);
+  
+  lv_draw_sw_rgb565_swap(px_map, w * h);
+  gfx->draw16bitRGBBitmap(area->x1, area->y1, (uint16_t *)px_map, w, h);
+  
+  lv_display_flush_ready(disp_drv);
+}
+
+// ============================================
+// СОЗДАНИЕ ВСЕХ ЭКРАНОВ
+// ============================================
+void create_all_screens() {
+  
+  // ========== 1. BOOT SCREEN ==========
+  screen_boot = lv_obj_create(NULL);
+  lv_obj_set_style_bg_color(screen_boot, lv_color_black(), 0);
+  
+  lv_obj_t* label_boot = lv_label_create(screen_boot);
+  lv_label_set_text(label_boot, "FD-01");
+  lv_obj_set_style_text_font(label_boot, &lv_font_montserrat_32, 0);
+  lv_obj_set_style_text_color(label_boot, lv_color_white(), 0);
+  lv_obj_center(label_boot);
+  
+  lv_obj_t* label_loading = lv_label_create(screen_boot);
+  lv_label_set_text(label_loading, "Loading...");
+  lv_obj_set_style_text_color(label_loading, lv_color_hex(0x808080), 0);
+  lv_obj_align(label_loading, LV_ALIGN_CENTER, 0, 50);
+  
+  // ========== 2. WAIT SPOOL SCREEN (упрощенный для круглого дисплея) ==========
+  screen_wait_spool = lv_obj_create(NULL);
+  lv_obj_set_style_bg_color(screen_wait_spool, lv_color_black(), 0);
+  
+  // Заголовок
+  lv_obj_t* label_wait_title = lv_label_create(screen_wait_spool);
+  lv_label_set_text(label_wait_title, "FD-01");
+  lv_obj_set_style_text_font(label_wait_title, &lv_font_montserrat_24, 0);
+  lv_obj_set_style_text_color(label_wait_title, lv_color_white(), 0);
+  lv_obj_align(label_wait_title, LV_ALIGN_TOP_MID, 0, 20);
+  
+  // Сообщение (центр)
+  lv_obj_t* label_wait_msg = lv_label_create(screen_wait_spool);
+  lv_label_set_text(label_wait_msg, "Place spool\non holder");
+  lv_obj_set_style_text_font(label_wait_msg, &lv_font_montserrat_24, 0);
+  lv_obj_set_style_text_color(label_wait_msg, lv_color_hex(0xFFFF00), 0);
+  lv_obj_set_style_text_align(label_wait_msg, LV_TEXT_ALIGN_CENTER, 0);
+  lv_obj_center(label_wait_msg);
+  
+  // Подсказка внизу
+  lv_obj_t* label_wait_hint = lv_label_create(screen_wait_spool);
+  lv_label_set_text(label_wait_hint, "Waiting...");
+  lv_obj_set_style_text_font(label_wait_hint, &lv_font_montserrat_16, 0);
+  lv_obj_set_style_text_color(label_wait_hint, lv_color_hex(0x808080), 0);
+  lv_obj_align(label_wait_hint, LV_ALIGN_BOTTOM_MID, 0, -30);
+  
+  // ========== 3. SELECT METHOD SCREEN (компактный для круглого дисплея) ==========
+  screen_select_method = lv_obj_create(NULL);
+  lv_obj_set_style_bg_color(screen_select_method, lv_color_black(), 0);
+  
+  // Заголовок
+  lv_obj_t* label_select_title = lv_label_create(screen_select_method);
+  lv_label_set_text(label_select_title, "Select Method");
+  lv_obj_set_style_text_font(label_select_title, &lv_font_montserrat_20, 0);
+  lv_obj_set_style_text_color(label_select_title, lv_color_white(), 0);
+  lv_obj_align(label_select_title, LV_ALIGN_TOP_MID, 0, 20);
+  
+  // Кнопка NFC (голубая, компактная)
+  lv_obj_t* btn_nfc = lv_button_create(screen_select_method);
+  lv_obj_set_size(btn_nfc, 180, 60);
+  lv_obj_align(btn_nfc, LV_ALIGN_CENTER, 0, -30);
+  lv_obj_set_style_bg_color(btn_nfc, lv_color_hex(0x00FFFF), 0);
+  lv_obj_set_style_radius(btn_nfc, 10, 0);
+  lv_obj_add_event_cb(btn_nfc, btn_nfc_event, LV_EVENT_CLICKED, NULL);
+  
+  lv_obj_t* label_nfc = lv_label_create(btn_nfc);
+  lv_label_set_text(label_nfc, "NFC TAG");
+  lv_obj_set_style_text_font(label_nfc, &lv_font_montserrat_20, 0);
+  lv_obj_set_style_text_color(label_nfc, lv_color_black(), 0);
+  lv_obj_center(label_nfc);
+  
+  // Кнопка APP (зеленая, компактная)
+  lv_obj_t* btn_app = lv_button_create(screen_select_method);
+  lv_obj_set_size(btn_app, 180, 60);
+  lv_obj_align(btn_app, LV_ALIGN_CENTER, 0, 40);
+  lv_obj_set_style_bg_color(btn_app, lv_color_hex(0x00FF00), 0);
+  lv_obj_set_style_radius(btn_app, 10, 0);
+  lv_obj_add_event_cb(btn_app, btn_app_event, LV_EVENT_CLICKED, NULL);
+  
+  lv_obj_t* label_app = lv_label_create(btn_app);
+  lv_label_set_text(label_app, "MOBILE APP");
+  lv_obj_set_style_text_font(label_app, &lv_font_montserrat_20, 0);
+  lv_obj_set_style_text_color(label_app, lv_color_black(), 0);
+  lv_obj_center(label_app);
+  
+  // ========== 4. WAIT NFC SCREEN (упрощенный + кнопка возврата) ==========
+  screen_wait_nfc = lv_obj_create(NULL);
+  lv_obj_set_style_bg_color(screen_wait_nfc, lv_color_black(), 0);
+  
+  // Заголовок
+  lv_obj_t* label_nfc_title = lv_label_create(screen_wait_nfc);
+  lv_label_set_text(label_nfc_title, "NFC Mode");
+  lv_obj_set_style_text_font(label_nfc_title, &lv_font_montserrat_24, 0);
+  lv_obj_set_style_text_color(label_nfc_title, lv_color_white(), 0);
+  lv_obj_align(label_nfc_title, LV_ALIGN_TOP_MID, 0, 20);
+  
+  // Сообщение (центр, выше)
+  lv_obj_t* label_nfc_msg = lv_label_create(screen_wait_nfc);
+  lv_label_set_text(label_nfc_msg, "Scan NFC tag");
+  lv_obj_set_style_text_font(label_nfc_msg, &lv_font_montserrat_24, 0);
+  lv_obj_set_style_text_color(label_nfc_msg, lv_color_hex(0x00FFFF), 0);
+  lv_obj_align(label_nfc_msg, LV_ALIGN_CENTER, 0, -20);
+  
+  // Подсказка (выше)
+  lv_obj_t* label_nfc_hint = lv_label_create(screen_wait_nfc);
+  lv_label_set_text(label_nfc_hint, "Place tag near reader");
+  lv_obj_set_style_text_font(label_nfc_hint, &lv_font_montserrat_14, 0);
+  lv_obj_set_style_text_color(label_nfc_hint, lv_color_hex(0x808080), 0);
+  lv_obj_align(label_nfc_hint, LV_ALIGN_CENTER, 0, 20);
+  
+  // Кнопка возврата (красный крестик, выше)
+  lv_obj_t* btn_back_nfc = lv_button_create(screen_wait_nfc);
+  lv_obj_set_size(btn_back_nfc, 50, 50);
+  lv_obj_align(btn_back_nfc, LV_ALIGN_BOTTOM_MID, 0, -30);
+  lv_obj_set_style_bg_color(btn_back_nfc, lv_color_hex(0xFF0000), 0);
+  lv_obj_set_style_radius(btn_back_nfc, 25, 0);
+  lv_obj_add_event_cb(btn_back_nfc, btn_back_event, LV_EVENT_CLICKED, NULL);
+  
+  lv_obj_t* label_back_nfc = lv_label_create(btn_back_nfc);
+  lv_label_set_text(label_back_nfc, "X");
+  lv_obj_set_style_text_font(label_back_nfc, &lv_font_montserrat_24, 0);
+  lv_obj_set_style_text_color(label_back_nfc, lv_color_white(), 0);
+  lv_obj_center(label_back_nfc);
+  
+  // ========== 5. WAIT APP SCREEN (упрощенный + кнопка возврата, без WiFi) ==========
+  screen_wait_app = lv_obj_create(NULL);
+  lv_obj_set_style_bg_color(screen_wait_app, lv_color_black(), 0);
+  
+  // Заголовок
+  lv_obj_t* label_app_title = lv_label_create(screen_wait_app);
+  lv_label_set_text(label_app_title, "App Mode");
+  lv_obj_set_style_text_font(label_app_title, &lv_font_montserrat_24, 0);
+  lv_obj_set_style_text_color(label_app_title, lv_color_white(), 0);
+  lv_obj_align(label_app_title, LV_ALIGN_TOP_MID, 0, 20);
+  
+  // Сообщение (центр, выше)
+  lv_obj_t* label_app_msg = lv_label_create(screen_wait_app);
+  lv_label_set_text(label_app_msg, "Waiting for\nBLE connection");
+  lv_obj_set_style_text_font(label_app_msg, &lv_font_montserrat_20, 0);
+  lv_obj_set_style_text_color(label_app_msg, lv_color_hex(0x00FF00), 0);
+  lv_obj_set_style_text_align(label_app_msg, LV_TEXT_ALIGN_CENTER, 0);
+  lv_obj_align(label_app_msg, LV_ALIGN_CENTER, 0, -20);
+  
+  // Подсказка (выше)
+  lv_obj_t* label_app_hint = lv_label_create(screen_wait_app);
+  lv_label_set_text(label_app_hint, "Open mobile app");
+  lv_obj_set_style_text_font(label_app_hint, &lv_font_montserrat_14, 0);
+  lv_obj_set_style_text_color(label_app_hint, lv_color_hex(0x808080), 0);
+  lv_obj_align(label_app_hint, LV_ALIGN_CENTER, 0, 20);
+  
+  // Кнопка возврата (красный крестик, выше)
+  lv_obj_t* btn_back_app = lv_button_create(screen_wait_app);
+  lv_obj_set_size(btn_back_app, 50, 50);
+  lv_obj_align(btn_back_app, LV_ALIGN_BOTTOM_MID, 0, -30);
+  lv_obj_set_style_bg_color(btn_back_app, lv_color_hex(0xFF0000), 0);
+  lv_obj_set_style_radius(btn_back_app, 25, 0);
+  lv_obj_add_event_cb(btn_back_app, btn_back_event, LV_EVENT_CLICKED, NULL);
+  
+  lv_obj_t* label_back_app = lv_label_create(btn_back_app);
+  lv_label_set_text(label_back_app, "X");
+  lv_obj_set_style_text_font(label_back_app, &lv_font_montserrat_24, 0);
+  lv_obj_set_style_text_color(label_back_app, lv_color_white(), 0);
+  lv_obj_center(label_back_app);
+  
+  // ========== 6. RUNNING SCREEN (НОВЫЙ ДИЗАЙН) ==========
+  screen_running = lv_obj_create(NULL);
+  lv_obj_set_style_bg_color(screen_running, lv_color_black(), 0);
+  
+  // ПРОГРЕСС-БАР ПО КОНТУРУ (незамкнутый круг снизу)
+  arc_progress = lv_arc_create(screen_running);
+  lv_obj_set_size(arc_progress, 220, 220);
+  lv_obj_center(arc_progress);
+  lv_arc_set_rotation(arc_progress, 135);  // Начало слева-снизу
+  lv_arc_set_bg_angles(arc_progress, 0, 270);  // 270° дуга (разрыв 90° снизу)
+  lv_arc_set_range(arc_progress, 0, 270);  // Диапазон значений 0-270
+  lv_obj_set_style_arc_color(arc_progress, lv_color_hex(0x404040), LV_PART_MAIN);  // Серый фон
+  lv_obj_set_style_arc_color(arc_progress, lv_color_white(), LV_PART_INDICATOR);   // Белый прогресс
+  lv_obj_set_style_arc_width(arc_progress, 12, LV_PART_MAIN);
+  lv_obj_set_style_arc_width(arc_progress, 12, LV_PART_INDICATOR);
+  lv_obj_remove_style(arc_progress, NULL, LV_PART_KNOB);
+  lv_arc_set_value(arc_progress, (int)(current_percent * 270.0 / 100.0));  // Масштабируем на 270°
+  
+  // МАТЕРИАЛ (большими буквами сверху, по центру)
+  label_material = lv_label_create(screen_running);
+  lv_label_set_text(label_material, profile_loaded ? current_material.c_str() : "?");
+  lv_obj_set_style_text_font(label_material, &lv_font_montserrat_24, 0);
+  lv_obj_set_style_text_color(label_material, lv_color_white(), 0);
+  lv_obj_align(label_material, LV_ALIGN_CENTER, 0, -70);
+  
+  // ПРОИЗВОДИТЕЛЬ (чуть ниже, по центру)
+  label_manufacturer = lv_label_create(screen_running);
+  lv_label_set_text(label_manufacturer, profile_loaded ? current_manufacturer.c_str() : "?");
+  lv_obj_set_style_text_font(label_manufacturer, &lv_font_montserrat_14, 0);
+  lv_obj_set_style_text_color(label_manufacturer, lv_color_hex(0x808080), 0);
+  lv_obj_align(label_manufacturer, LV_ALIGN_CENTER, 0, -48);
+  
+  // ПРОЦЕНТ - основная цифра (большая, левее)
+  label_percent_main = lv_label_create(screen_running);
+  char buf[16];
+  if (profile_loaded) {
+    snprintf(buf, sizeof(buf), "%d", (int)current_percent);
+  } else {
+    snprintf(buf, sizeof(buf), "?");
+  }
+  lv_label_set_text(label_percent_main, buf);
+  lv_obj_set_style_text_font(label_percent_main, &lv_font_montserrat_48, 0);
+  lv_obj_set_style_text_color(label_percent_main, lv_color_white(), 0);
+  lv_obj_align(label_percent_main, LV_ALIGN_CENTER, -60, -5);
+  
+  // ПРОЦЕНТ - знак % (ближе к цифре, желтый, левее)
+  label_percent_sign = lv_label_create(screen_running);
+  lv_label_set_text(label_percent_sign, "%");
+  lv_obj_set_style_text_font(label_percent_sign, &lv_font_montserrat_24, 0);
+  lv_obj_set_style_text_color(label_percent_sign, lv_color_hex(0xFFFF00), 0);  // Желтый
+  lv_obj_align(label_percent_sign, LV_ALIGN_CENTER, -15, -15);
+  
+  // ПРОЦЕНТ - десятичная часть (под знаком %, ближе, левее)
+  label_percent_decimal = lv_label_create(screen_running);
+  if (profile_loaded) {
+    int decimal = (int)((current_percent - (int)current_percent) * 10);
+    snprintf(buf, sizeof(buf), ".%d", decimal);
+  } else {
+    snprintf(buf, sizeof(buf), "");  // Пусто если нет профиля
+  }
+  lv_label_set_text(label_percent_decimal, buf);
+  lv_obj_set_style_text_font(label_percent_decimal, &lv_font_montserrat_20, 0);
+  lv_obj_set_style_text_color(label_percent_decimal, lv_color_white(), 0);
+  lv_obj_align(label_percent_decimal, LV_ALIGN_CENTER, -15, 10);
+  
+  // WGT: (желтый, выше, крупнее, левее)
+  label_weight_title = lv_label_create(screen_running);
+  lv_label_set_text(label_weight_title, "WGT");
+  lv_obj_set_style_text_font(label_weight_title, &lv_font_montserrat_20, 0);
+  lv_obj_set_style_text_color(label_weight_title, lv_color_hex(0xFFFF00), 0);
+  lv_obj_align(label_weight_title, LV_ALIGN_CENTER, 20, 0);
+  
+  // Вес (белый, меньше, левее)
+  label_weight_value = lv_label_create(screen_running);
+  snprintf(buf, sizeof(buf), "%dg", (int)currentWeight);
+  lv_label_set_text(label_weight_value, buf);
+  lv_obj_set_style_text_font(label_weight_value, &lv_font_montserrat_16, 0);
+  lv_obj_set_style_text_color(label_weight_value, lv_color_white(), 0);
+  lv_obj_align(label_weight_value, LV_ALIGN_CENTER, 65, 0);
+  
+  // LGT: (желтый, выше, крупнее, левее)
+  label_length_title = lv_label_create(screen_running);
+  lv_label_set_text(label_length_title, "LGT");
+  lv_obj_set_style_text_font(label_length_title, &lv_font_montserrat_20, 0);
+  lv_obj_set_style_text_color(label_length_title, lv_color_hex(0xFFFF00), 0);
+  lv_obj_align(label_length_title, LV_ALIGN_CENTER, 20, 25);
+  
+  // Длина (белый, меньше, левее)
+  label_length_value = lv_label_create(screen_running);
+  if (profile_loaded) {
+    snprintf(buf, sizeof(buf), "%dm", current_length);
+  } else {
+    snprintf(buf, sizeof(buf), "?");
+  }
+  lv_label_set_text(label_length_value, buf);
+  lv_obj_set_style_text_font(label_length_value, &lv_font_montserrat_16, 0);
+  lv_obj_set_style_text_color(label_length_value, lv_color_white(), 0);
+  lv_obj_align(label_length_value, LV_ALIGN_CENTER, 65, 25);
+  
+  // ВРЕМЯ (внизу по центру, без секунд и MSK, выше)
+  label_time = lv_label_create(screen_running);
+  lv_label_set_text(label_time, "12:34");
+  lv_obj_set_style_text_font(label_time, &lv_font_montserrat_20, 0);
+  lv_obj_set_style_text_color(label_time, lv_color_hex(0x808080), 0);
+  lv_obj_align(label_time, LV_ALIGN_BOTTOM_MID, 0, -30);
+}
+
+// ============================================
+// ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ
+// ============================================
+void load_screen(int screen_num) {
+  current_screen = screen_num;
+  
+  switch(screen_num) {
+    case 1: 
+      lv_scr_load(screen_boot); 
+      break;
+    case 2: 
+      lv_scr_load(screen_wait_spool); 
+      break;
+    case 3: 
+      lv_scr_load(screen_select_method); 
+      break;
+    case 4: 
+      lv_scr_load(screen_wait_nfc); 
+      break;
+    case 5: 
+      lv_scr_load(screen_wait_app); 
+      break;
+    case 6: 
+      lv_scr_load(screen_running);
+      // Обновляем все виджеты при загрузке экрана
+      Serial.println("[DEBUG] Экран 6 загружен, обновляем виджеты...");
+      update_weight(currentWeight);
+      update_percent(current_percent);
+      update_length(current_length);
+      break;
+  }
+  
+  lv_refr_now(disp);  // Принудительная перерисовка после переключения
+  Serial.printf("[DEBUG] Экран %d загружен и перерисован\n", screen_num);
+}
+
+// ============================================
+// ОБНОВЛЕНИЕ ВЕСА
+// ============================================
+void update_weight(float weight) {
+  currentWeight = weight;
+  
+  // Вычисляем чистый вес (вес филамента без катушки)
+  float displayWeight = netWeight; // Показываем чистый вес филамента
+  
+  Serial.printf("[DEBUG] update_weight вызван: общий=%.0fg, чистый=%.0fg, screen=%d\n", 
+                weight, displayWeight, current_screen);
+  
+  if (current_screen == 6) {  // Только если на экране RUNNING
+    Serial.println("[DEBUG] Экран 6 активен, обновляем виджет...");
+    
+    // Проверяем что виджет существует
+    if (label_weight_value == NULL) {
+      Serial.println("[ERROR] label_weight_value == NULL!");
+      return;
+    }
+    
+    char buf[32];
+    // Автоматическое масштабирование для больших чисел
+    if (displayWeight >= 1000) {
+      snprintf(buf, sizeof(buf), "%.1fkg", displayWeight / 1000.0);
+    } else {
+      snprintf(buf, sizeof(buf), "%dg", (int)displayWeight);
+    }
+    Serial.printf("[DEBUG] Новый текст: %s (чистый вес филамента)\n", buf);
+    
+    lv_label_set_text(label_weight_value, buf);
+    lv_refr_now(disp);  // Принудительная перерисовка!
+    
+    Serial.println("[DEBUG] lv_label_set_text + lv_refr_now выполнены");
+  } else {
+    Serial.printf("[DEBUG] Экран %d не активен, пропускаем обновление\n", current_screen);
+  }
+}
+
+// ============================================
+// ОБНОВЛЕНИЕ ПРОЦЕНТА
+// ============================================
+void update_percent(float percent) {
+  current_percent = percent;
+  
+  Serial.printf("[DEBUG] update_percent вызван: %.1f%%, screen=%d\n", percent, current_screen);
+  
+  if (current_screen == 6) {  // Только если на экране RUNNING
+    Serial.println("[DEBUG] Обновляем процент...");
+    
+    if (!profile_loaded) {
+      Serial.println("[DEBUG] Профиль не загружен, показываем '?'");
+      lv_label_set_text(label_percent_main, "?");
+      lv_label_set_text(label_percent_decimal, "");
+      lv_obj_set_style_text_font(label_percent_main, &lv_font_montserrat_48, 0);
+      lv_refr_now(disp);
+      return;
+    }
+    
+    // Обновляем прогресс-бар (масштабируем на 270°)
+    int arc_value = (int)(percent * 270.0 / 100.0);
+    Serial.printf("[DEBUG] Arc value: %d\n", arc_value);
+    lv_arc_set_value(arc_progress, arc_value);
+    
+    // Основная цифра - автоматическое масштабирование для 100%
+    char buf[16];
+    if (percent >= 100) {
+      // Для 100% используем меньший шрифт
+      snprintf(buf, sizeof(buf), "%d", (int)percent);
+      lv_label_set_text(label_percent_main, buf);
+      lv_obj_set_style_text_font(label_percent_main, &lv_font_montserrat_32, 0);
+    } else {
+      snprintf(buf, sizeof(buf), "%d", (int)percent);
+      lv_label_set_text(label_percent_main, buf);
+      lv_obj_set_style_text_font(label_percent_main, &lv_font_montserrat_48, 0);
+    }
+    
+    // Десятичная часть
+    int decimal = (int)((percent - (int)percent) * 10);
+    snprintf(buf, sizeof(buf), ".%d", decimal);
+    lv_label_set_text(label_percent_decimal, buf);
+    
+    lv_refr_now(disp);  // Принудительная перерисовка!
+    
+    Serial.println("[DEBUG] Процент обновлен + lv_refr_now");
+  }
+}
+
+// ============================================
+// ОБНОВЛЕНИЕ ДЛИНЫ
+// ============================================
+void update_length(int length) {
+  current_length = length;
+  
+  Serial.printf("[DEBUG] update_length вызван: %dm, screen=%d\n", length, current_screen);
+  
+  if (current_screen == 6) {  // Только если на экране RUNNING
+    if (!profile_loaded) {
+      Serial.println("[DEBUG] Профиль не загружен, показываем '?'");
+      lv_label_set_text(label_length_value, "?");
+      lv_refr_now(disp);
+      return;
+    }
+    
+    char buf[32];
+    // Автоматическое масштабирование для больших чисел
+    if (length >= 1000) {
+      snprintf(buf, sizeof(buf), "%.1fkm", length / 1000.0);
+    } else {
+      snprintf(buf, sizeof(buf), "%dm", length);
+    }
+    lv_label_set_text(label_length_value, buf);
+    lv_refr_now(disp);  // Принудительная перерисовка!
+    
+    Serial.println("[DEBUG] Длина обновлена + lv_refr_now");
+  }
+}
+
+// ============================================
+// ОБНОВЛЕНИЕ МАТЕРИАЛА И ПРОИЗВОДИТЕЛЯ
+// ============================================
+void update_material_and_manufacturer() {
+  if (current_screen == 6) {
+    if (profile_loaded) {
+      lv_label_set_text(label_material, current_material.c_str());
+      lv_label_set_text(label_manufacturer, current_manufacturer.c_str());
+    } else {
+      lv_label_set_text(label_material, "?");
+      lv_label_set_text(label_manufacturer, "?");
+    }
+    lv_refr_now(disp);
+  }
+}
+
+// ============================================
+// ОБНОВЛЕНИЕ ВРЕМЕНИ
+// ============================================
+void update_time() {
+  // Получаем текущее время (в реальной версии будет NTP)
+  unsigned long seconds = millis() / 1000;
+  int h = (seconds / 3600) % 24;
+  int m = (seconds / 60) % 60;
+  
+  char buf[32];
+  snprintf(buf, sizeof(buf), "%02d:%02d", h, m);
+  lv_label_set_text(label_time, buf);
+}
+
+// ============================================
+// ОБРАБОТЧИКИ КНОПОК
+// ============================================
+void btn_nfc_event(lv_event_t* e) {
+  Serial.println("→ Выбран NFC");
+  load_screen(4);
+}
+
+void btn_app_event(lv_event_t* e) {
+  Serial.println("→ Выбран APP");
+  load_screen(5);
+}
+
+void btn_back_event(lv_event_t* e) {
+  Serial.println("→ Возврат к выбору метода");
+  load_screen(3);
+}
+
+// ============================================
+// ФУНКЦИИ РАБОТЫ С МОДУЛЯМИ
+// ============================================
+
+// Обновление веса с тензодатчика
+void updateWeightSensor() {
+  #if DEBUG_MODE
+  // В DEBUG режиме вес устанавливается через Serial команды
+  // Ничего не делаем здесь
+  #else
+  if (scale.is_ready()) {
+    currentWeight = scale.get_units(3);
+  }
+  #endif
+  
+  // Вычисляем чистый вес (без катушки)
+  if (profile_loaded && currentFilament.spool_weight > 0) {
+    netWeight = currentWeight - currentFilament.spool_weight;
+    if (netWeight < 0) netWeight = 0;
+  } else {
+    netWeight = currentWeight;
+  }
+  
+  // Автоматический переход из STATE_WAIT_SPOOL в SELECT_METHOD
+  if (currentState == STATE_WAIT_SPOOL && currentWeight > MIN_SPOOL_WEIGHT) {
+    // ВСЕГДА показываем выбор метода, даже если профиль загружен
+    currentState = STATE_SELECT_METHOD;
+    Serial.println("[UI] Катушка обнаружена, показываем выбор метода");
+    load_screen(3);
+  }
+
+  // Автоматический возврат из SELECT_METHOD в WAIT_SPOOL если вес убрали
+  if (currentState == STATE_SELECT_METHOD && currentWeight < MIN_SPOOL_WEIGHT) {
+    currentState = STATE_WAIT_SPOOL;
+    Serial.println("[UI] Катушка убрана, возврат к ожиданию");
+    load_screen(2);
+  }
+
+  // Возврат из WAIT_NFC/WAIT_APP в SELECT_METHOD если вес убрали
+  if ((currentState == STATE_WAIT_NFC || currentState == STATE_WAIT_APP) && currentWeight < MIN_SPOOL_WEIGHT) {
+    currentState = STATE_WAIT_SPOOL;
+    Serial.println("[UI] Катушка убрана во время ожидания, возврат");
+    load_screen(2);
+  }
+  /*
+  // Переход из SELECT_METHOD/WAIT_NFC/WAIT_APP в RUNNING если профиль загрузился
+  if ((currentState == STATE_SELECT_METHOD || currentState == STATE_WAIT_NFC || currentState == STATE_WAIT_APP) 
+      && profile_loaded && currentWeight > MIN_SPOOL_WEIGHT) {
+    currentState = STATE_RUNNING;
+    Serial.println("[UI] Профиль загружен + катушка на месте, переход в RUNNING");
+    load_screen(6);
+  }
+  */
+  
+  // Возврат из RUNNING в WAIT_SPOOL если катушку убрали
+  if (currentState == STATE_RUNNING && currentWeight < MIN_SPOOL_WEIGHT) {
+    currentState = STATE_WAIT_SPOOL;
+    Serial.println("[UI] Катушка убрана из RUNNING, возврат к ожиданию");
+    load_screen(2);
+    // Профиль остается загруженным (profile_loaded = true)
+  }
+  
+  if (current_screen == 6) {
+    update_weight(currentWeight);
+    
+    if (profile_loaded && currentFilament.weight > 0) {
+      // Процент от чистого веса филамента (без катушки)
+      float filamentOnly = currentFilament.weight - currentFilament.spool_weight;
+      float percent = (netWeight / filamentOnly) * 100.0f;
+      if (percent > 100) percent = 100;
+      if (percent < 0) percent = 0;
+      update_percent(percent);
+      
+      if (currentFilament.diameter > 0 && currentFilament.density > 0) {
+        int length = (int)calculateLength(netWeight, currentFilament.diameter, currentFilament.density);
+        update_length(length);
+      }
+    }
+  }
+}
+
+// Проверка NFC карты
+void checkNFC() {
+  // Проверяем NFC только в нужных состояниях
+  if (currentState != STATE_WAIT_NFC && currentState != STATE_RUNNING) {
+    return;
+  }
+  
+  // Переключаем SPI на NFC
+  SPI.end();
+  SPI.begin(LCD_SCK, RC522_MISO, LCD_MOSI, RC522_CS);
+  
+  if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
+    String uid = "";
+    for (byte i = 0; i < rfid.uid.size; i++) {
+      if (rfid.uid.uidByte[i] < 0x10) uid += "0";
+      uid += String(rfid.uid.uidByte[i], HEX);
+    }
+    uid.toUpperCase();
+    
+    if (uid != lastNfcUid) {
+      lastNfcUid = uid;
+      Serial.print("[NFC] Карта: ");
+      Serial.println(uid);
+      
+      String filamentId = readNfcData();
+      if (filamentId.length() > 0) {
+        loadFilamentProfile(filamentId);
+        if (profile_loaded) {
+          currentState = STATE_RUNNING;
+          Serial.println("[UI] Профиль загружен через NFC, переход в RUNNING");
+          load_screen(6);
+        }
+      }
+    }
+    
+    rfid.PICC_HaltA();
+    rfid.PCD_StopCrypto1();
+  }
+  
+  // Возвращаем SPI на дисплей
+  SPI.end();
+  SPI.begin(LCD_SCK, -1, LCD_MOSI, LCD_CS);
+  SPI.setDataMode(SPI_MODE0);
+  SPI.setBitOrder(MSBFIRST);
+  SPI.setFrequency(40000000);
+}
+
+// Чтение данных с NFC карты
+String readNfcData() {
+  byte buffer[18];
+  byte size = sizeof(buffer);
+  
+  MFRC522::StatusCode status = rfid.MIFARE_Read(4, buffer, &size);
+  if (status == MFRC522::STATUS_OK) {
+    String data = "";
+    for (byte i = 0; i < 16; i++) {
+      if (buffer[i] >= 32 && buffer[i] <= 126) {
+        data += (char)buffer[i];
+      }
+    }
+    data.trim();
+    return data;
+  }
+  return "";
+}
+
+// Загрузка профиля филамента из LittleFS
+void loadFilamentProfile(String filamentId) {
+  File file = LittleFS.open("/filaments.json", "r");
+  if (!file) {
+    Serial.println("[LittleFS] Не удалось открыть filaments.json");
+    return;
+  }
+  
+  String line;
+  bool found = false;
+  
+  while (file.available()) {
+    line = file.readStringUntil('\n');
+    if (line.indexOf(filamentId) >= 0) {
+      found = true;
+      break;
+    }
+  }
+  file.close();
+  
+  if (found) {
+    // Парсим JSON строку
+    int idx = line.indexOf("\"material\":\"");
+    if (idx >= 0) {
+      idx += 12;
+      int end = line.indexOf("\"", idx);
+      currentFilament.material = line.substring(idx, end);
+      current_material = currentFilament.material;
+    }
+    
+    idx = line.indexOf("\"manufacturer\":\"");
+    if (idx >= 0) {
+      idx += 16;
+      int end = line.indexOf("\"", idx);
+      currentFilament.manufacturer = line.substring(idx, end);
+      current_manufacturer = currentFilament.manufacturer;
+    }
+    
+    idx = line.indexOf("\"weight\":");
+    if (idx >= 0) {
+      idx += 9;
+      currentFilament.weight = line.substring(idx, line.indexOf(",", idx)).toFloat();
+    }
+    
+    idx = line.indexOf("\"spool_weight\":");
+    if (idx < 0) {
+      idx = line.indexOf("\"spoolWeight\":");
+      if (idx >= 0) idx += 14;
+    } else {
+      idx += 15;
+    }
+    if (idx >= 0) {
+      currentFilament.spool_weight = line.substring(idx, line.indexOf(",", idx)).toFloat();
+    }
+    
+    idx = line.indexOf("\"length\":");
+    if (idx >= 0) {
+      idx += 9;
+      currentFilament.length = line.substring(idx, line.indexOf(",", idx)).toInt();
+      current_length = currentFilament.length;
+    }
+    
+    idx = line.indexOf("\"diameter\":");
+    if (idx >= 0) {
+      idx += 11;
+      currentFilament.diameter = line.substring(idx, line.indexOf(",", idx)).toFloat();
+    }
+    
+    idx = line.indexOf("\"density\":");
+    if (idx >= 0) {
+      idx += 10;
+      currentFilament.density = line.substring(idx, line.indexOf(",", idx)).toFloat();
+    }
+    
+    idx = line.indexOf("\"bed_temp\":");
+    if (idx < 0) {
+      idx = line.indexOf("\"bedTemp\":");
+      if (idx >= 0) idx += 10;
+    } else {
+      idx += 11;
+    }
+    if (idx >= 0) {
+      currentFilament.bed_temp = line.substring(idx, line.indexOf(",", idx)).toInt();
+    }
+    
+    currentFilament.id = filamentId;
+    profile_loaded = true;
+    
+    Serial.print("[FILAMENT] Загружен: ");
+    Serial.print(currentFilament.material);
+    Serial.print(" (");
+    Serial.print(currentFilament.manufacturer);
+    Serial.println(")");
+    
+    // Переход в STATE_RUNNING если есть катушка на весах
+    if (currentWeight > MIN_SPOOL_WEIGHT) {
+      currentState = STATE_RUNNING;
+      Serial.println("[UI] Профиль загружен, переход в RUNNING");
+      load_screen(6);
+    } else {
+      Serial.println("[UI] Профиль загружен, но катушка не обнаружена (вес < MIN_SPOOL_WEIGHT)");
+      // Остаемся на текущем экране, профиль сохранен и будет использован когда катушку положат
+    }
+    
+    saveLastFilament();
+  } else {
+    Serial.println("[FILAMENT] Профиль не найден");
+  }
+}
+
+// Сохранение последнего профиля в кэш
+void saveLastFilament() {
+  File file = LittleFS.open("/cache.json", "w");
+  if (file) {
+    file.print("{\"id\":\"");
+    file.print(currentFilament.id);
+    file.print("\",\"weight\":");
+    file.print(currentWeight);
+    file.println("}");
+    file.close();
+    Serial.println("[CACHE] Профиль сохранен");
+  }
+}
+
+// Загрузка последнего профиля из кэша
+void loadLastFilament() {
+  File file = LittleFS.open("/cache.json", "r");
+  if (!file) {
+    Serial.println("[CACHE] Кэш не найден");
+    return;
+  }
+  
+  String content = file.readString();
+  file.close();
+  
+  int idx = content.indexOf("\"id\":\"");
+  if (idx >= 0) {
+    idx += 6;
+    String id = content.substring(idx, content.indexOf("\"", idx));
+    if (id.length() > 0) {
+      Serial.print("[CACHE] Загрузка профиля: ");
+      Serial.println(id);
+      loadFilamentProfile(id);
+    }
+  }
+}
+
+// HTTP обработчик для плагина
+void handleData() {
+  String response = "{\"name\":\"" + String(DEVICE_NAME) + 
+                    "\",\"net\":" + String(netWeight, 1) +
+                    ",\"gross\":" + String(currentWeight, 1) +
+                    ",\"spool\":" + String(currentFilament.spool_weight, 1) +
+                    ",\"weight\":" + String(currentFilament.weight, 1) +
+                    ",\"filament_id\":\"" + currentFilament.id +
+                    "\",\"material\":\"" + currentFilament.material +
+                    "\",\"manufacturer\":\"" + currentFilament.manufacturer +
+                    "\",\"percent\":" + String(current_percent, 1) +
+                    ",\"length\":" + String(current_length) +
+                    ",\"diameter\":" + String(currentFilament.diameter, 2) +
+                    ",\"density\":" + String(currentFilament.density, 2) +
+                    ",\"bed_temp\":" + String(currentFilament.bed_temp) +
+                    ",\"status\":\"" + String(profile_loaded ? "active" : "idle") +
+                    "\",\"profile_loaded\":" + String(profile_loaded ? "true" : "false") +
+                    "}";
+  
+  server.send(200, "application/json", response);
+  Serial.println("[HTTP] Данные отправлены плагину");
+}
+
+// Отправка данных через BLE
+void sendBLEData() {
+  // Проверка что BLE инициализирован
+  if (!pDataChar) {
+    Serial.println("[BLE] ОШИБКА: pDataChar == NULL");
+    return;
+  }
+  
+  String data = "{\"net\":" + String(netWeight, 1) +
+                ",\"gross\":" + String(currentWeight, 1) +
+                ",\"spool\":" + String(currentFilament.spool_weight, 1) +
+                ",\"filament_id\":\"" + currentFilament.id +
+                "\",\"material\":\"" + currentFilament.material +
+                "\",\"manufacturer\":\"" + currentFilament.manufacturer +
+                "\",\"percent\":" + String(current_percent, 1) +
+                ",\"length\":" + String(current_length) +
+                ",\"diameter\":" + String(currentFilament.diameter, 2) +
+                ",\"density\":" + String(currentFilament.density, 2) +
+                ",\"bed_temp\":" + String(currentFilament.bed_temp) +
+                ",\"status\":\"" + String(profile_loaded ? "active" : "idle") +
+                "\",\"profile_loaded\":" + String(profile_loaded ? "true" : "false") +
+                "}";
+  
+  pDataChar->setValue(data.c_str());
+  pDataChar->notify();
+}
+
+// ============================================
+// ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ
+// ============================================
+
+// Расчет длины филамента по весу, диаметру и плотности
+float calculateLength(float weight_g, float diameter_mm, float density) {
+  if (diameter_mm <= 0 || density <= 0 || weight_g <= 0) return 0;
+  
+  // Формула: Длина (м) = Вес_г / (Плотность × π × (Диаметр_мм/2)² / 100)
+  float radius_mm = diameter_mm / 2.0;
+  float area_mm2 = 3.14159 * radius_mm * radius_mm;
+  float area_cm2 = area_mm2 / 100.0;
+  float volume_cm3 = weight_g / density;
+  float length_cm = volume_cm3 / area_cm2;
+  float length_m = length_cm / 100.0;
+  
+  return length_m;
+}
+
+// Запись данных на NFC карту
+bool writeNfcData(String filamentId) {
+  Serial.println("[NFC] Начало записи...");
+  
+  // Переключаем SPI на NFC
+  SPI.end();
+  SPI.begin(LCD_SCK, RC522_MISO, LCD_MOSI, RC522_CS);
+  
+  // Проверяем наличие карты
+  if (!rfid.PICC_IsNewCardPresent()) {
+    Serial.println("[NFC] Карта не обнаружена");
+    SPI.end();
+    SPI.begin(LCD_SCK, -1, LCD_MOSI, LCD_CS);
+    SPI.setDataMode(SPI_MODE0);
+    SPI.setBitOrder(MSBFIRST);
+    SPI.setFrequency(40000000);
+    return false;
+  }
+  
+  if (!rfid.PICC_ReadCardSerial()) {
+    Serial.println("[NFC] Ошибка чтения карты");
+    SPI.end();
+    SPI.begin(LCD_SCK, -1, LCD_MOSI, LCD_CS);
+    SPI.setDataMode(SPI_MODE0);
+    SPI.setBitOrder(MSBFIRST);
+    SPI.setFrequency(40000000);
+    return false;
+  }
+  
+  // Подготовка данных для записи
+  byte buffer[16];
+  memset(buffer, 0, sizeof(buffer));
+  
+  // Копируем ID профиля в буфер (максимум 16 байт)
+  int len = (filamentId.length() < 16) ? filamentId.length() : 16;
+  filamentId.getBytes(buffer, len + 1);
+  
+  // Записываем в блок 4 (первый блок данных после служебных)
+  MFRC522::StatusCode status = rfid.MIFARE_Write(4, buffer, 16);
+  
+  bool success = (status == MFRC522::STATUS_OK);
+  
+  if (success) {
+    Serial.print("[NFC] Записано: ");
+    Serial.println(filamentId);
+  } else {
+    Serial.print("[NFC] Ошибка записи: ");
+    Serial.println(rfid.GetStatusCodeName(status));
+  }
+  
+  rfid.PICC_HaltA();
+  rfid.PCD_StopCrypto1();
+  
+  // Возвращаем SPI на LCD
+  SPI.end();
+  SPI.begin(LCD_SCK, -1, LCD_MOSI, LCD_CS);
+  SPI.setDataMode(SPI_MODE0);
+  SPI.setBitOrder(MSBFIRST);
+  SPI.setFrequency(40000000);
+  
+  return success;
+}
+
+// HTTP endpoint для статуса устройства
+void handleStatus() {
+  String response = "{\"device\":\"" + String(DEVICE_NAME) +
+                    "\",\"uptime\":" + String(millis() / 1000) +
+                    ",\"free_heap\":" + String(ESP.getFreeHeap()) +
+                    ",\"ble_connected\":" + String(deviceConnected ? "true" : "false") +
+                    ",\"wifi_connected\":" + String(WiFi.status() == WL_CONNECTED ? "true" : "false") +
+                    ",\"nfc_last_read\":\"" + lastNfcUid +
+                    "\",\"profile_loaded\":" + String(profile_loaded ? "true" : "false") +
+                    ",\"current_state\":" + String((int)currentState) +
+                    "}";
+  
+  server.send(200, "application/json", response);
+  Serial.println("[HTTP] Status отправлен");
+}
+
+// HTTP endpoint для тарировки
+void handleTare() {
+  #if !DEBUG_MODE
+  scale.tare(10);
+  Serial.println("[HTTP] Tare выполнен (HX711)");
+  #else
+  currentWeight = 0;
+  Serial.println("[HTTP] Tare выполнен (DEBUG)");
+  #endif
+  
+  String response = "{\"success\":true,\"message\":\"Tare completed\"}";
+  server.send(200, "application/json", response);
+}
+
+
+// ============================================
+// ТАЧСКРИН CST816S
+// ============================================
+
+void touch_init() {
+  Wire.begin(TP_SDA, TP_SCL);
+  Wire.setClock(400000);
+
+  pinMode(TP_RST, OUTPUT);
+  pinMode(TP_INT, INPUT_PULLUP);
+
+  // Reset
+  digitalWrite(TP_RST, LOW);
+  delay(10);
+  digitalWrite(TP_RST, HIGH);
+  delay(50);
+
+  // Check device
+  Wire.beginTransmission(TOUCH_I2C_ADDR);
+  byte error = Wire.endTransmission();
+  
+  Serial.printf("[TOUCH] I2C check: %d (0=OK)\n", error);
+  
+  if (error == 0) {
+    // Read chip ID
+    Wire.beginTransmission(TOUCH_I2C_ADDR);
+    Wire.write(0xA7);
+    Wire.endTransmission(false);
+    Wire.requestFrom((uint8_t)TOUCH_I2C_ADDR, (uint8_t)1);
+    if (Wire.available()) {
+      byte chipId = Wire.read();
+      Serial.printf("[TOUCH] Chip ID: 0x%02X (expected 0xB5)\n", chipId);
+    }
+    
+    // Set mode
+    Wire.beginTransmission(TOUCH_I2C_ADDR);
+    Wire.write(0xFA);  // IrqCtl
+    Wire.write(0x41);  // Point mode
+    Wire.endTransmission();
+
+    Serial.printf("[TOUCH] INT pin: %d, state: %d\n", TP_INT, digitalRead(TP_INT));
+    attachInterrupt(digitalPinToInterrupt(TP_INT), touch_interrupt, FALLING);
+    Serial.println("[TOUCH] Interrupt attached");
+  } else {
+    Serial.println("[TOUCH] Device not found!");
+  }
+}
+
+void touch_read() {
+  Serial.println("[TOUCH] Reading...");
+  
+  Wire.beginTransmission(TOUCH_I2C_ADDR);
+  Wire.write(0x02);
+  Wire.endTransmission(false);
+
+  Wire.requestFrom((uint8_t)TOUCH_I2C_ADDR, (uint8_t)6);
+  if (Wire.available() >= 6) {
+    uint8_t data[6];
+    for (int i = 0; i < 6; i++) {
+      data[i] = Wire.read();
+    }
+
+    Serial.printf("[TOUCH] Raw data: %02X %02X %02X %02X %02X %02X\n", 
+                  data[0], data[1], data[2], data[3], data[4], data[5]);
+
+    uint8_t points = data[0] & 0x0F;
+    Serial.printf("[TOUCH] Points: %d\n", points);
+    
+    if (points > 0) {
+      touchPoint.x = ((data[1] & 0x0F) << 8) | data[2];
+      touchPoint.y = ((data[3] & 0x0F) << 8) | data[4];
+      touchPoint.touched = true;
+
+      Serial.printf("[TOUCH] Coordinates: X=%d Y=%d\n", touchPoint.x, touchPoint.y);
+    } else {
+      touchPoint.touched = false;
+      Serial.println("[TOUCH] No touch detected");
+    }
+  } else {
+    Serial.printf("[TOUCH] Not enough data: %d bytes\n", Wire.available());
+  }
+}
+
+void my_touchpad_read(lv_indev_t *indev_drv, lv_indev_data_t *data) {
+  static unsigned long lastDebug = 0;
+  static unsigned long callCount = 0;
+  
+  callCount++;
+  
+  Wire.beginTransmission(TOUCH_I2C_ADDR);
+  Wire.write(0x02);
+  Wire.endTransmission(false);
+  
+  Wire.requestFrom((uint8_t)TOUCH_I2C_ADDR, (uint8_t)6);
+  
+  bool touched = false;
+  int16_t x = 0, y = 0;
+  
+  if (Wire.available() >= 6) {
+    uint8_t data_raw[6];
+    for (int i = 0; i < 6; i++) {
+      data_raw[i] = Wire.read();
+    }
+    
+    uint8_t points = data_raw[0] & 0x0F;
+    
+    if (points > 0) {
+      x = ((data_raw[1] & 0x0F) << 8) | data_raw[2];
+      y = ((data_raw[3] & 0x0F) << 8) | data_raw[4];
+      touched = true;
+      
+      Serial.printf("[TOUCH] DETECTED! X=%d Y=%d Points=%d\n", x, y, points);
+    }
+  }
+  
+  // Периодический дебаг каждые 5 секунд
+  if (millis() - lastDebug > 5000) {
+    lastDebug = millis();
+    Serial.printf("[TOUCH] Polling active, calls: %lu, touched: %d\n", callCount, touched);
+  }
+
+  if (touched) {
+    data->state = LV_INDEV_STATE_PRESSED;
+    data->point.x = x;
+    data->point.y = y;
+  } else {
+    data->state = LV_INDEV_STATE_RELEASED;
+  }
+}
+
+// ============================================
+// СИНХРОНИЗАЦИЯ БАЗЫ ДАННЫХ
+// ============================================
+
+// Отправка списка всех профилей
+void sendProfileList() {
+  Serial.println("[DB] === Начало отправки списка профилей ===");
+  
+  // Проверка что BLE инициализирован
+  if (!pDbSyncChar) {
+    Serial.println("[DB] ОШИБКА: pDbSyncChar == NULL, BLE не инициализирован");
+    return;
+  }
+  
+  // Проверяем что LittleFS смонтирован
+  if (!LittleFS.begin()) {
+    Serial.println("[DB] ОШИБКА: LittleFS не смонтирован!");
+    String response = "{\"cmd\":\"profile_list\",\"profiles\":[],\"error\":\"LittleFS not mounted\"}";
+    pDbSyncChar->setValue(response.c_str());
+    pDbSyncChar->notify();
+    return;
+  }
+  
+  File file = LittleFS.open("/filaments.json", "r");
+  if (!file) {
+    Serial.println("[DB] ОШИБКА: Не удалось открыть /filaments.json");
+    Serial.println("[DB] Проверь что файл загружен через LittleFS Data Upload");
+    
+    // Показываем список файлов в LittleFS
+    Serial.println("[DB] Файлы в LittleFS:");
+    File root = LittleFS.open("/");
+    File f = root.openNextFile();
+    int count = 0;
+    while (f) {
+      Serial.printf("  - %s (%d байт)\n", f.name(), f.size());
+      f = root.openNextFile();
+      count++;
+    }
+    if (count == 0) {
+      Serial.println("  (пусто - загрузи данные через Tools -> ESP32 LittleFS Data Upload)");
+    }
+    
+    String response = "{\"cmd\":\"profile_list\",\"profiles\":[],\"error\":\"File not found\"}";
+    pDbSyncChar->setValue(response.c_str());
+    pDbSyncChar->notify();
+    return;
+  }
+  
+  Serial.printf("[DB] Файл открыт, размер: %d байт\n", file.size());
+  
+  String response = "{\"cmd\":\"profile_list\",\"profiles\":[";
+  bool first = true;
+  int profileCount = 0;
+  int maxProfiles = 500; // Увеличено для полной базы профилей
+  
+  while (file.available() && profileCount < maxProfiles) {
+    String line = file.readStringUntil('\n');
+    line.trim();
+    
+    if (line.length() > 0 && line.startsWith("{")) {
+      // Отправляем полный профиль (вся строка JSON)
+      if (!first) response += ",";
+      response += line;
+      first = false;
+      profileCount++;
+    }
+  }
+  
+  response += "]}";
+  file.close();
+  
+  Serial.printf("[DB] Найдено профилей: %d\n", profileCount);
+  Serial.printf("[DB] Размер ответа: %d байт\n", response.length());
+  Serial.printf("[DB] Первые 500 символов: %s\n", response.substring(0, min(500, (int)response.length())).c_str());
+  
+  // Если данных нет
+  if (profileCount == 0) {
+    Serial.println("[DB] ВНИМАНИЕ: Профили не найдены в файле!");
+  }
+  
+  // Отправляем одним пакетом (без chunking)
+  Serial.println("[DB] Отправка одним пакетом через BLE notify");
+  pDbSyncChar->setValue(response.c_str());
+  pDbSyncChar->notify();
+  Serial.println("[DB] notify() вызван");
+  
+  Serial.println("[DB] === Отправка завершена ===");
+}
+
+void sendFullProfile(String filamentId) {
+  if (!pDbSyncChar) {
+    Serial.println("[DB] ERROR: pDbSyncChar == NULL");
+    return;
+  }
+  
+  File file = LittleFS.open("/filaments.json", "r");
+  if (!file) {
+    Serial.println("[DB] Не удалось открыть filaments.json");
+    String response = "{\"cmd\":\"profile_data\",\"success\":false}";
+    pDbSyncChar->setValue(response.c_str());
+    pDbSyncChar->notify();
+    return;
+  }
+  
+  String line;
+  bool found = false;
+  
+  while (file.available()) {
+    line = file.readStringUntil('\n');
+    if (line.indexOf(filamentId) >= 0) {
+      found = true;
+      break;
+    }
+  }
+  file.close();
+  
+  if (found) {
+    String response = "{\"cmd\":\"profile_data\",\"success\":true,\"data\":" + line + "}";
+    Serial.printf("[DB] Отправка профиля %s (%d байт)\n", filamentId.c_str(), response.length());
+    pDbSyncChar->setValue(response.c_str());
+    pDbSyncChar->notify();
+  } else {
+    String response = "{\"cmd\":\"profile_data\",\"success\":false}";
+    pDbSyncChar->setValue(response.c_str());
+    pDbSyncChar->notify();
+    Serial.printf("[DB] Профиль %s не найден\n", filamentId.c_str());
+  }
+}
+
+// Добавление нового профиля в базу данных
+bool addProfileToDatabase(String profileJson) {
+  // Извлекаем ID из JSON
+  String id = "";
+  int idx = profileJson.indexOf("\"id\":\"");
+  if (idx >= 0) {
+    idx += 6;
+    id = profileJson.substring(idx, profileJson.indexOf("\"", idx));
+  }
+  
+  if (id.length() == 0) {
+    Serial.println("[DB] Ошибка: ID не найден в профиле");
+    return false;
+  }
+  
+  // Проверяем, существует ли уже профиль с таким ID
+  File file = LittleFS.open("/filaments.json", "r");
+  if (file) {
+    while (file.available()) {
+      String line = file.readStringUntil('\n');
+      if (line.indexOf("\"id\":\"" + id + "\"") >= 0) {
+        file.close();
+        Serial.printf("[DB] Профиль %s уже существует\n", id.c_str());
+        return false; // Профиль уже есть
+      }
+    }
+    file.close();
+  }
+  
+  // Добавляем профиль в конец файла
+  file = LittleFS.open("/filaments.json", "a");
+  if (!file) {
+    Serial.println("[DB] Не удалось открыть filaments.json для записи");
+    return false;
+  }
+  
+  file.println(profileJson);
+  file.close();
+  
+  Serial.printf("[DB] Профиль %s добавлен в базу\n", id.c_str());
+  return true;
+}
+
