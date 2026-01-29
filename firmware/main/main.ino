@@ -1876,7 +1876,7 @@ void sendProfileList() {
   
   // Chunking: разбиваем на фрагменты
   // Flutter собирает data из всех чанков и парсит как единый JSON
-  const int CHUNK_SIZE = 400;
+  const int CHUNK_SIZE = 280;  // Уменьшено для запаса после экранирования
   int totalLength = response.length();
   int totalChunks = (totalLength + CHUNK_SIZE - 1) / CHUNK_SIZE;
   
@@ -1888,7 +1888,9 @@ void sendProfileList() {
     String dataChunk = response.substring(start, end);
     
     // Экранируем для вложения в JSON строку
-    String escapedData = "";
+    String escapedData;
+    escapedData.reserve(dataChunk.length() * 2);  // Резервируем память с запасом
+    
     for (int j = 0; j < dataChunk.length(); j++) {
       char c = dataChunk[j];
       if (c == '\\') escapedData += "\\\\";
@@ -1903,6 +1905,11 @@ void sendProfileList() {
     String chunk = "{\"cmd\":\"database_chunk\",\"index\":" + String(i) + 
                    ",\"total\":" + String(totalChunks) + 
                    ",\"data\":\"" + escapedData + "\"}";
+    
+    // Проверка размера чанка
+    if (chunk.length() > 500) {
+      Serial.printf("[DB] WARNING: chunk %d too large: %d bytes!\n", i + 1, chunk.length());
+    }
     
     Serial.printf("[DB] Отправка чанка %d/%d (%d байт)\n", i + 1, totalChunks, chunk.length());
     
