@@ -649,7 +649,6 @@ void loop() {
     else if (cmd.startsWith("w")) {
       float weight = cmd.substring(1).toFloat();
       currentWeight = weight;
-      currentWeight = weight;
       update_weight(weight);
       Serial.printf("→ Вес обновлен: %.0fg\n", weight);
     }
@@ -1331,11 +1330,35 @@ void checkNFC() {
 
 // Чтение данных с NFC карты (поддержка NDEF формата)
 String readNfcData() {
+  // ИСПРАВЛЕНИЕ: Добавлена MIFARE аутентификация
+  // Используем стандартный ключ по умолчанию (FF FF FF FF FF FF)
+  MFRC522::MIFARE_Key key;
+  for (byte i = 0; i < 6; i++) {
+    key.keyByte[i] = 0xFF;
+  }
+  
+  // Аутентификация для блока 4 (сектор 1)
+  byte trailerBlock = 7; // Trailer block для сектора 1
+  MFRC522::StatusCode status = rfid.PCD_Authenticate(
+    MFRC522::PICC_CMD_MF_AUTH_KEY_A, 
+    trailerBlock, 
+    &key, 
+    &(rfid.uid)
+  );
+  
+  if (status != MFRC522::STATUS_OK) {
+    Serial.print("[NFC] Ошибка аутентификации: ");
+    Serial.println(rfid.GetStatusCodeName(status));
+    return "";
+  }
+  
   byte buffer[18];
   byte size = sizeof(buffer);
   
-  MFRC522::StatusCode status = rfid.MIFARE_Read(4, buffer, &size);
+  status = rfid.MIFARE_Read(4, buffer, &size);
   if (status != MFRC522::STATUS_OK) {
+    Serial.print("[NFC] Ошибка чтения: ");
+    Serial.println(rfid.GetStatusCodeName(status));
     return "";
   }
   
@@ -1612,6 +1635,35 @@ bool writeNfcData(String filamentId) {
     return false;
   }
   
+  // ИСПРАВЛЕНИЕ: Добавлена MIFARE аутентификация
+  // Используем стандартный ключ по умолчанию (FF FF FF FF FF FF)
+  MFRC522::MIFARE_Key key;
+  for (byte i = 0; i < 6; i++) {
+    key.keyByte[i] = 0xFF;
+  }
+  
+  // Аутентификация для блока 4 (сектор 1)
+  byte trailerBlock = 7; // Trailer block для сектора 1
+  MFRC522::StatusCode status = rfid.PCD_Authenticate(
+    MFRC522::PICC_CMD_MF_AUTH_KEY_A, 
+    trailerBlock, 
+    &key, 
+    &(rfid.uid)
+  );
+  
+  if (status != MFRC522::STATUS_OK) {
+    Serial.print("[NFC] Ошибка аутентификации: ");
+    Serial.println(rfid.GetStatusCodeName(status));
+    rfid.PICC_HaltA();
+    rfid.PCD_StopCrypto1();
+    SPI.end();
+    SPI.begin(LCD_SCK, -1, LCD_MOSI, LCD_CS);
+    SPI.setDataMode(SPI_MODE0);
+    SPI.setBitOrder(MSBFIRST);
+    SPI.setFrequency(40000000);
+    return false;
+  }
+  
   // Подготовка данных в NDEF формате
   // NDEF Text Record: 03 XX D1 01 YY 54 02 65 6E [payload] FE
   byte idBytes[32];
@@ -1644,7 +1696,7 @@ bool writeNfcData(String filamentId) {
   }
   
   // Записываем первый блок
-  MFRC522::StatusCode status = rfid.MIFARE_Write(4, buffer1, 16);
+  status = rfid.MIFARE_Write(4, buffer1, 16);
   
   if (status != MFRC522::STATUS_OK) {
     Serial.print("[NFC] Ошибка записи блока 4: ");

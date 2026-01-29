@@ -69,6 +69,7 @@ class BluetoothService extends ChangeNotifier {
   StreamSubscription? _scanSubscription;
   StreamSubscription? _connectionStateSubscription;
   Timer? _simulationTimer;
+  Timer? _profileListTimeoutTimer; // ИСПРАВЛЕНИЕ: Таймер для отмены timeout
   Completer<Filament?>? _profileCompleter;
   
   bool _isScanning = false;
@@ -257,6 +258,8 @@ class BluetoothService extends ChangeNotifier {
   Future<void> disconnect() async {
     _simulationTimer?.cancel();
     _simulationTimer = null;
+    _profileListTimeoutTimer?.cancel(); // ИСПРАВЛЕНИЕ: Отменяем timeout таймер
+    _profileListTimeoutTimer = null;
     await _dataSubscription?.cancel();
     await _dbSyncSubscription?.cancel();
     await _scanSubscription?.cancel();
@@ -413,6 +416,11 @@ class BluetoothService extends ChangeNotifier {
   void _parseProfileList(Map<String, dynamic> data) {
     try {
       debugPrint('[BLE] ===== PARSING PROFILE LIST =====');
+      
+      // ИСПРАВЛЕНИЕ: Отменяем timeout таймер при успешном получении данных
+      _profileListTimeoutTimer?.cancel();
+      _profileListTimeoutTimer = null;
+      
       _profiles.clear();
       
       List<dynamic> profilesData = data['profiles'] ?? [];
@@ -475,7 +483,9 @@ class BluetoothService extends ChangeNotifier {
       Map<String, dynamic> cmd = {'cmd': 'get_profile_list'};
       await _cmdChar!.write(utf8.encode(json.encode(cmd)), withoutResponse: false);
       
-      Future.delayed(const Duration(seconds: 30), () {
+      // ИСПРАВЛЕНИЕ: Используем Timer вместо Future.delayed для возможности отмены
+      _profileListTimeoutTimer?.cancel();
+      _profileListTimeoutTimer = Timer(const Duration(seconds: 30), () {
         if (_isLoadingProfiles) {
           debugPrint('[BLE] Profile list timeout!');
           _isLoadingProfiles = false;
