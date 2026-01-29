@@ -1329,13 +1329,64 @@ void checkNFC() {
   SPI.setFrequency(40000000);
 }
 
-// Чтение данных с NFC карты
+// Чтение данных с NFC карты (поддержка NDEF формата)
 String readNfcData() {
   byte buffer[18];
   byte size = sizeof(buffer);
   
   MFRC522::StatusCode status = rfid.MIFARE_Read(4, buffer, &size);
-  if (status == MFRC522::STATUS_OK) {
+  if (status != MFRC522::STATUS_OK) {
+    return "";
+  }
+  
+  // Проверяем NDEF формат
+  // NDEF Text Record: 03 XX D1 01 YY 54 02 65 6E [payload]
+  // 03 = NDEF Message TLV
+  // XX = длина сообщения
+  // D1 = MB=1, ME=1, CF=0, SR=1, IL=0, TNF=001 (Well Known)
+  // 01 = Type Length = 1
+  // YY = Payload Length
+  // 54 = 'T' (Text Record)
+  // 02 = UTF-8, language code length = 2
+  // 65 6E = 'en'
+  
+  if (buffer[0] == 0x03 && buffer[2] == 0xD1 && buffer[5] == 0x54) {
+    // NDEF формат обнаружен
+    Serial.println("[NFC] NDEF формат обнаружен");
+    
+    // Пропускаем NDEF заголовки
+    // buffer[6] = status byte (0x02 = UTF-8, language length)
+    byte langLength = buffer[6] & 0x3F; // Младшие 6 бит = длина языка
+    byte payloadStart = 7 + langLength; // 7 = начало языка, + длина языка
+    
+    // Извлекаем payload (ID профиля)
+    String data = "";
+    for (byte i = payloadStart; i < 16 && buffer[i] != 0x00 && buffer[i] != 0xFE; i++) {
+      if (buffer[i] >= 32 && buffer[i] <= 126) {
+        data += (char)buffer[i];
+      }
+    }
+    
+    // Если данные не поместились в первый блок, читаем следующий
+    if (data.length() < 10) { // ID обычно длиннее 10 символов
+      byte buffer2[18];
+      byte size2 = sizeof(buffer2);
+      status = rfid.MIFARE_Read(5, buffer2, &size2);
+      if (status == MFRC522::STATUS_OK) {
+        for (byte i = 0; i < 16 && buffer2[i] != 0x00 && buffer2[i] != 0xFE; i++) {
+          if (buffer2[i] >= 32 && buffer2[i] <= 126) {
+            data += (char)buffer2[i];
+          }
+        }
+      }
+    }
+    
+    data.trim();
+    Serial.printf("[NFC] NDEF payload: %s\n", data.c_str());
+    return data;
+  } else {
+    // Raw формат (старый способ записи через ESP32)
+    Serial.println("[NFC] Raw формат обнаружен");
     String data = "";
     for (byte i = 0; i < 16; i++) {
       if (buffer[i] >= 32 && buffer[i] <= 126) {
@@ -1345,7 +1396,6 @@ String readNfcData() {
     data.trim();
     return data;
   }
-  return "";
 }
 
 // Загрузка профиля филамента из LittleFS
@@ -1533,7 +1583,7 @@ float calculateLength(float weight_g, float diameter_mm, float density) {
   return length_m;
 }
 
-// Запись данных на NFC карту
+// Запись данных на NFC карту (NDEF формат для совместимости с Flutter)
 bool writeNfcData(String filamentId) {
   Serial.println("[NFC] Начало записи...");
   
@@ -1562,26 +1612,86 @@ bool writeNfcData(String filamentId) {
     return false;
   }
   
-  // Подготовка данных для записи
-  byte buffer[16];
-  memset(buffer, 0, sizeof(buffer));
+  // Подготовка данных в NDEF формате
+  // NDEF Text Record: 03 XX D1 01 YY 54 02 65 6E [payload] FE
+  byte idBytes[32];
+  int idLen = filamentId.length();
+  if (idLen > 32) idLen = 32;
+  filamentId.getBytes(idBytes, idLen + 1);
   
-  // Копируем ID профиля в буфер (максимум 16 байт)
-  int len = (filamentId.length() < 16) ? filamentId.length() : 16;
-  filamentId.getBytes(buffer, len + 1);
+  // Вычисляем длины
+  byte payloadLength = 3 + idLen; // 3 = status(1) + lang(2), + ID
+  byte messageLength = 5 + payloadLength; // 5 = D1 01 YY 54 02
   
-  // Записываем в блок 4 (первый блок данных после служебных)
-  MFRC522::StatusCode status = rfid.MIFARE_Write(4, buffer, 16);
+  // Формируем NDEF сообщение
+  byte buffer1[16];
+  memset(buffer1, 0, 16);
   
-  bool success = (status == MFRC522::STATUS_OK);
+  buffer1[0] = 0x03;              // NDEF Message TLV
+  buffer1[1] = messageLength;     // Длина сообщения
+  buffer1[2] = 0xD1;              // NDEF Record Header (MB=1, ME=1, SR=1, TNF=1)
+  buffer1[3] = 0x01;              // Type Length = 1
+  buffer1[4] = payloadLength;     // Payload Length
+  buffer1[5] = 0x54;              // Type = 'T' (Text)
+  buffer1[6] = 0x02;              // Status: UTF-8, lang length = 2
+  buffer1[7] = 0x65;              // 'e'
+  buffer1[8] = 0x6E;              // 'n'
   
-  if (success) {
-    Serial.print("[NFC] Записано: ");
-    Serial.println(filamentId);
-  } else {
-    Serial.print("[NFC] Ошибка записи: ");
-    Serial.println(rfid.GetStatusCodeName(status));
+  // Копируем ID (максимум 7 байт в первый блок)
+  int firstBlockPayload = (idLen > 7) ? 7 : idLen;
+  for (int i = 0; i < firstBlockPayload; i++) {
+    buffer1[9 + i] = idBytes[i];
   }
+  
+  // Записываем первый блок
+  MFRC522::StatusCode status = rfid.MIFARE_Write(4, buffer1, 16);
+  
+  if (status != MFRC522::STATUS_OK) {
+    Serial.print("[NFC] Ошибка записи блока 4: ");
+    Serial.println(rfid.GetStatusCodeName(status));
+    rfid.PICC_HaltA();
+    rfid.PCD_StopCrypto1();
+    SPI.end();
+    SPI.begin(LCD_SCK, -1, LCD_MOSI, LCD_CS);
+    SPI.setDataMode(SPI_MODE0);
+    SPI.setBitOrder(MSBFIRST);
+    SPI.setFrequency(40000000);
+    return false;
+  }
+  
+  // Если ID длиннее 7 байт, записываем продолжение в блок 5
+  if (idLen > 7) {
+    byte buffer2[16];
+    memset(buffer2, 0, 16);
+    
+    int remainingBytes = idLen - 7;
+    if (remainingBytes > 16) remainingBytes = 16;
+    
+    for (int i = 0; i < remainingBytes; i++) {
+      buffer2[i] = idBytes[7 + i];
+    }
+    
+    // Добавляем NDEF Terminator TLV если есть место
+    if (remainingBytes < 16) {
+      buffer2[remainingBytes] = 0xFE;
+    }
+    
+    status = rfid.MIFARE_Write(5, buffer2, 16);
+    
+    if (status != MFRC522::STATUS_OK) {
+      Serial.print("[NFC] Ошибка записи блока 5: ");
+      Serial.println(rfid.GetStatusCodeName(status));
+    }
+  } else {
+    // Добавляем NDEF Terminator в первый блок если есть место
+    if (9 + firstBlockPayload < 16) {
+      buffer1[9 + firstBlockPayload] = 0xFE;
+      rfid.MIFARE_Write(4, buffer1, 16);
+    }
+  }
+  
+  Serial.print("[NFC] Записано (NDEF): ");
+  Serial.println(filamentId);
   
   rfid.PICC_HaltA();
   rfid.PCD_StopCrypto1();
@@ -1593,7 +1703,7 @@ bool writeNfcData(String filamentId) {
   SPI.setBitOrder(MSBFIRST);
   SPI.setFrequency(40000000);
   
-  return success;
+  return true;
 }
 
 // HTTP endpoint для статуса устройства
