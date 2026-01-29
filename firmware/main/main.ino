@@ -1864,20 +1864,56 @@ void sendProfileList() {
   
   Serial.printf("[DB] Найдено профилей: %d\n", profileCount);
   Serial.printf("[DB] Размер ответа: %d байт\n", response.length());
-  Serial.printf("[DB] Первые 500 символов: %s\n", response.substring(0, min(500, (int)response.length())).c_str());
   
   // Если данных нет
   if (profileCount == 0) {
     Serial.println("[DB] ВНИМАНИЕ: Профили не найдены в файле!");
+    pDbSyncChar->setValue(response.c_str());
+    pDbSyncChar->notify();
+    Serial.println("[DB] === Отправка завершена (пустой список) ===");
+    return;
   }
   
-  // Отправляем одним пакетом (без chunking)
-  Serial.println("[DB] Отправка одним пакетом через BLE notify");
-  pDbSyncChar->setValue(response.c_str());
-  pDbSyncChar->notify();
-  Serial.println("[DB] notify() вызван");
+  // Chunking: разбиваем на фрагменты
+  // Flutter собирает data из всех чанков и парсит как единый JSON
+  const int CHUNK_SIZE = 400;
+  int totalLength = response.length();
+  int totalChunks = (totalLength + CHUNK_SIZE - 1) / CHUNK_SIZE;
   
-  Serial.println("[DB] === Отправка завершена ===");
+  Serial.printf("[DB] Отправка с chunking: %d чанков по ~%d байт\n", totalChunks, CHUNK_SIZE);
+  
+  for (int i = 0; i < totalChunks; i++) {
+    int start = i * CHUNK_SIZE;
+    int end = min(start + CHUNK_SIZE, totalLength);
+    String dataChunk = response.substring(start, end);
+    
+    // Экранируем для вложения в JSON строку
+    String escapedData = "";
+    for (int j = 0; j < dataChunk.length(); j++) {
+      char c = dataChunk[j];
+      if (c == '\\') escapedData += "\\\\";
+      else if (c == '\"') escapedData += "\\\"";
+      else if (c == '\n') escapedData += "\\n";
+      else if (c == '\r') escapedData += "\\r";
+      else if (c == '\t') escapedData += "\\t";
+      else escapedData += c;
+    }
+    
+    // Формируем чанк в формате для Flutter
+    String chunk = "{\"cmd\":\"database_chunk\",\"index\":" + String(i) + 
+                   ",\"total\":" + String(totalChunks) + 
+                   ",\"data\":\"" + escapedData + "\"}";
+    
+    Serial.printf("[DB] Отправка чанка %d/%d (%d байт)\n", i + 1, totalChunks, chunk.length());
+    
+    pDbSyncChar->setValue(chunk.c_str());
+    pDbSyncChar->notify();
+    
+    // Задержка для стабильности BLE
+    delay(20);
+  }
+  
+  Serial.println("[DB] === Отправка завершена (chunking) ===");
 }
 
 void sendFullProfile(String filamentId) {
