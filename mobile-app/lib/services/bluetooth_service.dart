@@ -36,14 +36,30 @@ class HolderData {
   });
 
   factory HolderData.fromJson(Map<String, dynamic> json) {
+    // Валидация веса (должен быть >= 0 и не NaN/Infinity)
+    double validateWeight(dynamic value) {
+      final v = (value ?? 0.0).toDouble();
+      if (v.isNaN || v.isInfinite || v < 0) return 0.0;
+      if (v > 50000) return 50000;  // Максимум 50 кг
+      return v;
+    }
+
+    // Валидация процента (0-100)
+    double? validatePercent(dynamic value) {
+      if (value == null) return null;
+      final v = value.toDouble();
+      if (v.isNaN || v.isInfinite) return null;
+      return v.clamp(0.0, 100.0);
+    }
+
     return HolderData(
-      grossWeight: (json['gross'] ?? 0.0).toDouble(),
-      netWeight: (json['net'] ?? 0.0).toDouble(),
-      spoolWeight: (json['spool'] ?? 0.0).toDouble(),
+      grossWeight: validateWeight(json['gross']),
+      netWeight: validateWeight(json['net']),
+      spoolWeight: validateWeight(json['spool']),
       currentFilamentId: json['filament_id'],
       material: json['material'],
       manufacturer: json['manufacturer'],
-      percent: json['percent']?.toDouble(),
+      percent: validatePercent(json['percent']),
       length: json['length'],
       diameter: json['diameter']?.toDouble(),
       density: json['density']?.toDouble(),
@@ -361,8 +377,14 @@ class BluetoothService extends ChangeNotifier {
       
       if (data['cmd'] == 'database_chunk') {
         debugPrint('[BLE] Chunk ${data['index']}/${data['total']}');
+
+        // Очищаем при получении первого чанка (защита от смешивания данных)
+        if (data['index'] == 0) {
+          _dbChunks.clear();
+        }
+
         _dbChunks.add(data['data']);
-        
+
         // Check if this is the last chunk
         if (data['index'] == data['total'] - 1) {
           debugPrint('[BLE] Last chunk received, assembling...');
@@ -378,15 +400,23 @@ class BluetoothService extends ChangeNotifier {
         _parseProfileList(data);
       } else if (data['cmd'] == 'profile_data') {
         debugPrint('[BLE] Full profile data received');
-        if (data['success'] == true && data['data'] != null) {
-          final profile = Filament.fromJson(data['data']);
-          _profileCompleter?.complete(profile);
-        } else {
-          _profileCompleter?.complete(null);
+        // Проверяем что Completer существует и не завершён
+        if (_profileCompleter != null && !_profileCompleter!.isCompleted) {
+          if (data['success'] == true && data['data'] != null) {
+            final profile = Filament.fromJson(data['data']);
+            _profileCompleter!.complete(profile);
+          } else {
+            _profileCompleter!.complete(null);
+          }
         }
+        _profileCompleter = null;  // Очищаем после использования
       } else if (data['cmd'] == 'add_profile_response') {
         debugPrint('[BLE] Add profile response: ${data['success']}');
-        _addProfileCompleter?.complete(data['success'] == true);
+        // Проверяем что Completer существует и не завершён
+        if (_addProfileCompleter != null && !_addProfileCompleter!.isCompleted) {
+          _addProfileCompleter!.complete(data['success'] == true);
+        }
+        _addProfileCompleter = null;  // Очищаем после использования
       } else {
         debugPrint('[BLE] Unknown cmd: ${data['cmd']}');
       }

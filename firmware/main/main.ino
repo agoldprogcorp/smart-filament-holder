@@ -359,8 +359,11 @@ void setup() {
         int idx = value.indexOf("filament_id\":\"");
         if (idx >= 0) {
           idx += 14;
-          String id = value.substring(idx, value.indexOf("\"", idx));
-          loadFilamentProfile(id);
+          int endIdx = value.indexOf("\"", idx);
+          if (endIdx > idx) {
+            String id = value.substring(idx, endIdx);
+            loadFilamentProfile(id);
+          }
         }
       }
       // Команда WRITE_NFC
@@ -368,9 +371,12 @@ void setup() {
         int idx = value.indexOf("\"id\":\"");
         if (idx >= 0) {
           idx += 6;
-          String id = value.substring(idx, value.indexOf("\"", idx));
-          bool success = writeNfcData(id);
-          Serial.printf("[NFC] Запись %s\n", success ? "успешна" : "неудачна");
+          int endIdx = value.indexOf("\"", idx);
+          if (endIdx > idx) {
+            String id = value.substring(idx, endIdx);
+            bool success = writeNfcData(id);
+            Serial.printf("[NFC] Запись %s\n", success ? "успешна" : "неудачна");
+          }
         }
       }
       // Команда SET_PROFILE (полный профиль в JSON)
@@ -441,9 +447,12 @@ void setup() {
         int idx = value.indexOf("\"id\":\"");
         if (idx >= 0) {
           idx += 6;
-          String id = value.substring(idx, value.indexOf("\"", idx));
-          Serial.printf("[BLE] Запрос профиля: %s\n", id.c_str());
-          sendFullProfile(id);
+          int endIdx = value.indexOf("\"", idx);
+          if (endIdx > idx) {
+            String id = value.substring(idx, endIdx);
+            Serial.printf("[BLE] Запрос профиля: %s\n", id.c_str());
+            sendFullProfile(id);
+          }
         }
       }
       // Команда ADD_PROFILE (добавить новый профиль в базу)
@@ -1593,15 +1602,39 @@ void loadLastFilament() {
 }
 
 // HTTP обработчик для плагина
+// Экранирование строки для JSON (защита от спецсимволов)
+String escapeJsonString(const String& input) {
+  String output;
+  output.reserve(input.length() + 10);
+  for (unsigned int i = 0; i < input.length(); i++) {
+    char c = input[i];
+    switch (c) {
+      case '\\': output += "\\\\"; break;
+      case '"':  output += "\\\""; break;
+      case '\n': output += "\\n"; break;
+      case '\r': output += "\\r"; break;
+      case '\t': output += "\\t"; break;
+      default:   output += c; break;
+    }
+  }
+  return output;
+}
+
 void handleData() {
-  String response = "{\"name\":\"" + String(DEVICE_NAME) + 
+  // Экранируем строки для корректного JSON
+  String safeName = escapeJsonString(String(DEVICE_NAME));
+  String safeId = escapeJsonString(currentFilament.id);
+  String safeMaterial = escapeJsonString(currentFilament.material);
+  String safeManufacturer = escapeJsonString(currentFilament.manufacturer);
+
+  String response = "{\"name\":\"" + safeName +
                     "\",\"net\":" + String(netWeight, 1) +
                     ",\"gross\":" + String(currentWeight, 1) +
                     ",\"spool\":" + String(currentFilament.spool_weight, 1) +
                     ",\"weight\":" + String(currentFilament.weight, 1) +
-                    ",\"filament_id\":\"" + currentFilament.id +
-                    "\",\"material\":\"" + currentFilament.material +
-                    "\",\"manufacturer\":\"" + currentFilament.manufacturer +
+                    ",\"filament_id\":\"" + safeId +
+                    "\",\"material\":\"" + safeMaterial +
+                    "\",\"manufacturer\":\"" + safeManufacturer +
                     "\",\"percent\":" + String(current_percent, 1) +
                     ",\"length\":" + String(current_length) +
                     ",\"diameter\":" + String(currentFilament.diameter, 2) +
@@ -1610,9 +1643,17 @@ void handleData() {
                     ",\"status\":\"" + String(profile_loaded ? "active" : "idle") +
                     "\",\"profile_loaded\":" + String(profile_loaded ? "true" : "false") +
                     "}";
-  
+
   server.send(200, "application/json", response);
   Serial.println("[HTTP] Данные отправлены плагину");
+}
+      case '\n': output += "\\n"; break;
+      case '\r': output += "\\r"; break;
+      case '\t': output += "\\t"; break;
+      default:   output += c; break;
+    }
+  }
+  return output;
 }
 
 // Отправка данных через BLE
@@ -1622,13 +1663,18 @@ void sendBLEData() {
     Serial.println("[BLE] ОШИБКА: pDataChar == NULL");
     return;
   }
-  
+
+  // Экранируем строки для корректного JSON
+  String safeId = escapeJsonString(currentFilament.id);
+  String safeMaterial = escapeJsonString(currentFilament.material);
+  String safeManufacturer = escapeJsonString(currentFilament.manufacturer);
+
   String data = "{\"net\":" + String(netWeight, 1) +
                 ",\"gross\":" + String(currentWeight, 1) +
                 ",\"spool\":" + String(currentFilament.spool_weight, 1) +
-                ",\"filament_id\":\"" + currentFilament.id +
-                "\",\"material\":\"" + currentFilament.material +
-                "\",\"manufacturer\":\"" + currentFilament.manufacturer +
+                ",\"filament_id\":\"" + safeId +
+                "\",\"material\":\"" + safeMaterial +
+                "\",\"manufacturer\":\"" + safeManufacturer +
                 "\",\"percent\":" + String(current_percent, 1) +
                 ",\"length\":" + String(current_length) +
                 ",\"diameter\":" + String(currentFilament.diameter, 2) +
@@ -1637,7 +1683,7 @@ void sendBLEData() {
                 ",\"status\":\"" + String(profile_loaded ? "active" : "idle") +
                 "\",\"profile_loaded\":" + String(profile_loaded ? "true" : "false") +
                 "}";
-  
+
   pDataChar->setValue(data.c_str());
   pDataChar->notify();
 }
@@ -1748,7 +1794,7 @@ bool writeMifareData(String filamentId) {
     return false;
   }
 
-  byte idBytes[32];
+  byte idBytes[33];  // +1 для null terminator
   int idLen = filamentId.length();
   if (idLen > 32) idLen = 32;
   filamentId.getBytes(idBytes, idLen + 1);
@@ -1848,8 +1894,8 @@ bool writeNfcData(String filamentId) {
 
   // Возвращаем SPI на LCD
   restoreLcdSpi();
-  
-  return true;
+
+  return success;
 }
 
 // HTTP endpoint для статуса устройства
