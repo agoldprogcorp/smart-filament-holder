@@ -167,15 +167,6 @@ HOLDER_PREFIX = "FD"        # Префикс имени устройства
 
 ---
 
-## Releases
-
-Готовые сборки в `releases/`:
-
-- `FilamentWeight-v1.0.0.apk` (47.4 MB)
-- `FilamentChecker-v1.0.0.exe` (39.8 MB)
-
----
-
 ## Troubleshooting
 
 **HX711 не отвечает**: установить `DEBUG_MODE = true` для тестирования без датчика
