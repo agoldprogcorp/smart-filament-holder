@@ -1330,70 +1330,117 @@ void checkNFC() {
   SPI.setFrequency(40000000);
 }
 
-// Чтение данных с NFC карты (поддержка NDEF формата)
-String readNfcData() {
-  // ИСПРАВЛЕНИЕ: Добавлена MIFARE аутентификация
-  // Используем стандартный ключ по умолчанию (FF FF FF FF FF FF)
-  MFRC522::MIFARE_Key key;
-  for (byte i = 0; i < 6; i++) {
-    key.keyByte[i] = 0xFF;
-  }
-  
-  // Аутентификация для блока 4 (сектор 1)
-  byte trailerBlock = 7; // Trailer block для сектора 1
-  MFRC522::StatusCode status = rfid.PCD_Authenticate(
-    MFRC522::PICC_CMD_MF_AUTH_KEY_A, 
-    trailerBlock, 
-    &key, 
-    &(rfid.uid)
-  );
-  
-  if (status != MFRC522::STATUS_OK) {
-    Serial.print("[NFC] Ошибка аутентификации: ");
-    Serial.println(rfid.GetStatusCodeName(status));
-    return "";
-  }
-  
+// Проверка типа NFC карты
+bool isNtagCard() {
+  MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
+  return (piccType == MFRC522::PICC_TYPE_MIFARE_UL);  // NTAG определяется как Ultralight
+}
+
+// Чтение данных с NTAG (Type 2 Tag)
+String readNtagData() {
+  // NTAG не требует аутентификации для чтения
+  // Данные начинаются со страницы 4, каждая страница = 4 байта
   byte buffer[18];
   byte size = sizeof(buffer);
-  
-  status = rfid.MIFARE_Read(4, buffer, &size);
+
+  // Читаем страницы 4-7 (16 байт) - там начинается NDEF
+  MFRC522::StatusCode status = rfid.MIFARE_Read(4, buffer, &size);
   if (status != MFRC522::STATUS_OK) {
-    Serial.print("[NFC] Ошибка чтения: ");
+    Serial.print("[NFC] NTAG ошибка чтения: ");
     Serial.println(rfid.GetStatusCodeName(status));
     return "";
   }
-  
-  // Проверяем NDEF формат
-  // NDEF Text Record: 03 XX D1 01 YY 54 02 65 6E [payload]
-  // 03 = NDEF Message TLV
-  // XX = длина сообщения
-  // D1 = MB=1, ME=1, CF=0, SR=1, IL=0, TNF=001 (Well Known)
-  // 01 = Type Length = 1
-  // YY = Payload Length
-  // 54 = 'T' (Text Record)
-  // 02 = UTF-8, language code length = 2
-  // 65 6E = 'en'
-  
+
+  // Ищем NDEF Text Record
+  String data = "";
+
+  // NDEF на NTAG: страница 4 содержит CC (Capability Container)
+  // Данные обычно начинаются со страницы 5+
+  // Проверяем NDEF TLV (03 = NDEF Message)
   if (buffer[0] == 0x03 && buffer[2] == 0xD1 && buffer[5] == 0x54) {
-    // NDEF формат обнаружен
-    Serial.println("[NFC] NDEF формат обнаружен");
-    
-    // Пропускаем NDEF заголовки
-    // buffer[6] = status byte (0x02 = UTF-8, language length)
-    byte langLength = buffer[6] & 0x3F; // Младшие 6 бит = длина языка
-    byte payloadStart = 7 + langLength; // 7 = начало языка, + длина языка
-    
-    // Извлекаем payload (ID профиля)
-    String data = "";
+    // NDEF формат
+    byte langLength = buffer[6] & 0x3F;
+    byte payloadStart = 7 + langLength;
+
     for (byte i = payloadStart; i < 16 && buffer[i] != 0x00 && buffer[i] != 0xFE; i++) {
       if (buffer[i] >= 32 && buffer[i] <= 126) {
         data += (char)buffer[i];
       }
     }
-    
-    // Если данные не поместились в первый блок, читаем следующий
-    if (data.length() < 10) { // ID обычно длиннее 10 символов
+
+    // Читаем следующие страницы если нужно
+    if (data.length() < 10) {
+      byte buffer2[18];
+      byte size2 = sizeof(buffer2);
+      status = rfid.MIFARE_Read(8, buffer2, &size2);  // Страницы 8-11
+      if (status == MFRC522::STATUS_OK) {
+        for (byte i = 0; i < 16 && buffer2[i] != 0x00 && buffer2[i] != 0xFE; i++) {
+          if (buffer2[i] >= 32 && buffer2[i] <= 126) {
+            data += (char)buffer2[i];
+          }
+        }
+      }
+    }
+  } else {
+    // Raw формат - просто читаем текст
+    for (byte i = 0; i < 16 && buffer[i] != 0x00; i++) {
+      if (buffer[i] >= 32 && buffer[i] <= 126) {
+        data += (char)buffer[i];
+      }
+    }
+  }
+
+  data.trim();
+  Serial.printf("[NFC] NTAG payload: %s\n", data.c_str());
+  return data;
+}
+
+// Чтение данных с MIFARE Classic
+String readMifareData() {
+  // MIFARE требует аутентификации
+  MFRC522::MIFARE_Key key;
+  for (byte i = 0; i < 6; i++) {
+    key.keyByte[i] = 0xFF;
+  }
+
+  byte trailerBlock = 7;
+  MFRC522::StatusCode status = rfid.PCD_Authenticate(
+    MFRC522::PICC_CMD_MF_AUTH_KEY_A,
+    trailerBlock,
+    &key,
+    &(rfid.uid)
+  );
+
+  if (status != MFRC522::STATUS_OK) {
+    Serial.print("[NFC] MIFARE ошибка аутентификации: ");
+    Serial.println(rfid.GetStatusCodeName(status));
+    return "";
+  }
+
+  byte buffer[18];
+  byte size = sizeof(buffer);
+
+  status = rfid.MIFARE_Read(4, buffer, &size);
+  if (status != MFRC522::STATUS_OK) {
+    Serial.print("[NFC] MIFARE ошибка чтения: ");
+    Serial.println(rfid.GetStatusCodeName(status));
+    return "";
+  }
+
+  String data = "";
+
+  // Проверяем NDEF формат
+  if (buffer[0] == 0x03 && buffer[2] == 0xD1 && buffer[5] == 0x54) {
+    byte langLength = buffer[6] & 0x3F;
+    byte payloadStart = 7 + langLength;
+
+    for (byte i = payloadStart; i < 16 && buffer[i] != 0x00 && buffer[i] != 0xFE; i++) {
+      if (buffer[i] >= 32 && buffer[i] <= 126) {
+        data += (char)buffer[i];
+      }
+    }
+
+    if (data.length() < 10) {
       byte buffer2[18];
       byte size2 = sizeof(buffer2);
       status = rfid.MIFARE_Read(5, buffer2, &size2);
@@ -1405,21 +1452,27 @@ String readNfcData() {
         }
       }
     }
-    
-    data.trim();
-    Serial.printf("[NFC] NDEF payload: %s\n", data.c_str());
-    return data;
   } else {
-    // Raw формат (старый способ записи через ESP32)
-    Serial.println("[NFC] Raw формат обнаружен");
-    String data = "";
     for (byte i = 0; i < 16; i++) {
       if (buffer[i] >= 32 && buffer[i] <= 126) {
         data += (char)buffer[i];
       }
     }
-    data.trim();
-    return data;
+  }
+
+  data.trim();
+  Serial.printf("[NFC] MIFARE payload: %s\n", data.c_str());
+  return data;
+}
+
+// Чтение данных с NFC карты (поддержка MIFARE Classic и NTAG)
+String readNfcData() {
+  if (isNtagCard()) {
+    Serial.println("[NFC] Обнаружен NTAG/Ultralight");
+    return readNtagData();
+  } else {
+    Serial.println("[NFC] Обнаружен MIFARE Classic");
+    return readMifareData();
   }
 }
 
@@ -1608,154 +1661,193 @@ float calculateLength(float weight_g, float diameter_mm, float density) {
   return length_m;
 }
 
-// Запись данных на NFC карту (NDEF формат для совместимости с Flutter)
-bool writeNfcData(String filamentId) {
-  Serial.println("[NFC] Начало записи...");
-  
-  // Переключаем SPI на NFC
-  SPI.end();
-  SPI.begin(LCD_SCK, RC522_MISO, LCD_MOSI, RC522_CS);
-  
-  // Проверяем наличие карты
-  if (!rfid.PICC_IsNewCardPresent()) {
-    Serial.println("[NFC] Карта не обнаружена");
-    SPI.end();
-    SPI.begin(LCD_SCK, -1, LCD_MOSI, LCD_CS);
-    SPI.setDataMode(SPI_MODE0);
-    SPI.setBitOrder(MSBFIRST);
-    SPI.setFrequency(40000000);
-    return false;
-  }
-  
-  if (!rfid.PICC_ReadCardSerial()) {
-    Serial.println("[NFC] Ошибка чтения карты");
-    SPI.end();
-    SPI.begin(LCD_SCK, -1, LCD_MOSI, LCD_CS);
-    SPI.setDataMode(SPI_MODE0);
-    SPI.setBitOrder(MSBFIRST);
-    SPI.setFrequency(40000000);
-    return false;
-  }
-  
-  // ИСПРАВЛЕНИЕ: Добавлена MIFARE аутентификация
-  // Используем стандартный ключ по умолчанию (FF FF FF FF FF FF)
-  MFRC522::MIFARE_Key key;
-  for (byte i = 0; i < 6; i++) {
-    key.keyByte[i] = 0xFF;
-  }
-  
-  // Аутентификация для блока 4 (сектор 1)
-  byte trailerBlock = 7; // Trailer block для сектора 1
-  MFRC522::StatusCode status = rfid.PCD_Authenticate(
-    MFRC522::PICC_CMD_MF_AUTH_KEY_A, 
-    trailerBlock, 
-    &key, 
-    &(rfid.uid)
-  );
-  
-  if (status != MFRC522::STATUS_OK) {
-    Serial.print("[NFC] Ошибка аутентификации: ");
-    Serial.println(rfid.GetStatusCodeName(status));
-    rfid.PICC_HaltA();
-    rfid.PCD_StopCrypto1();
-    SPI.end();
-    SPI.begin(LCD_SCK, -1, LCD_MOSI, LCD_CS);
-    SPI.setDataMode(SPI_MODE0);
-    SPI.setBitOrder(MSBFIRST);
-    SPI.setFrequency(40000000);
-    return false;
-  }
-  
-  // Подготовка данных в NDEF формате
-  // NDEF Text Record: 03 XX D1 01 YY 54 02 65 6E [payload] FE
-  byte idBytes[32];
-  int idLen = filamentId.length();
-  if (idLen > 32) idLen = 32;
-  filamentId.getBytes(idBytes, idLen + 1);
-  
-  // Вычисляем длины
-  byte payloadLength = 3 + idLen; // 3 = status(1) + lang(2), + ID
-  byte messageLength = 5 + payloadLength; // 5 = D1 01 YY 54 02
-  
-  // Формируем NDEF сообщение
-  byte buffer1[16];
-  memset(buffer1, 0, 16);
-  
-  buffer1[0] = 0x03;              // NDEF Message TLV
-  buffer1[1] = messageLength;     // Длина сообщения
-  buffer1[2] = 0xD1;              // NDEF Record Header (MB=1, ME=1, SR=1, TNF=1)
-  buffer1[3] = 0x01;              // Type Length = 1
-  buffer1[4] = payloadLength;     // Payload Length
-  buffer1[5] = 0x54;              // Type = 'T' (Text)
-  buffer1[6] = 0x02;              // Status: UTF-8, lang length = 2
-  buffer1[7] = 0x65;              // 'e'
-  buffer1[8] = 0x6E;              // 'n'
-  
-  // Копируем ID (максимум 7 байт в первый блок)
-  int firstBlockPayload = (idLen > 7) ? 7 : idLen;
-  for (int i = 0; i < firstBlockPayload; i++) {
-    buffer1[9 + i] = idBytes[i];
-  }
-  
-  // Записываем первый блок
-  status = rfid.MIFARE_Write(4, buffer1, 16);
-  
-  if (status != MFRC522::STATUS_OK) {
-    Serial.print("[NFC] Ошибка записи блока 4: ");
-    Serial.println(rfid.GetStatusCodeName(status));
-    rfid.PICC_HaltA();
-    rfid.PCD_StopCrypto1();
-    SPI.end();
-    SPI.begin(LCD_SCK, -1, LCD_MOSI, LCD_CS);
-    SPI.setDataMode(SPI_MODE0);
-    SPI.setBitOrder(MSBFIRST);
-    SPI.setFrequency(40000000);
-    return false;
-  }
-  
-  // Если ID длиннее 7 байт, записываем продолжение в блок 5
-  if (idLen > 7) {
-    byte buffer2[16];
-    memset(buffer2, 0, 16);
-    
-    int remainingBytes = idLen - 7;
-    if (remainingBytes > 16) remainingBytes = 16;
-    
-    for (int i = 0; i < remainingBytes; i++) {
-      buffer2[i] = idBytes[7 + i];
-    }
-    
-    // Добавляем NDEF Terminator TLV если есть место
-    if (remainingBytes < 16) {
-      buffer2[remainingBytes] = 0xFE;
-    }
-    
-    status = rfid.MIFARE_Write(5, buffer2, 16);
-    
-    if (status != MFRC522::STATUS_OK) {
-      Serial.print("[NFC] Ошибка записи блока 5: ");
-      Serial.println(rfid.GetStatusCodeName(status));
-    }
-  } else {
-    // Добавляем NDEF Terminator в первый блок если есть место
-    if (9 + firstBlockPayload < 16) {
-      buffer1[9 + firstBlockPayload] = 0xFE;
-      rfid.MIFARE_Write(4, buffer1, 16);
-    }
-  }
-  
-  Serial.print("[NFC] Записано (NDEF): ");
-  Serial.println(filamentId);
-  
-  rfid.PICC_HaltA();
-  rfid.PCD_StopCrypto1();
-  
-  // Возвращаем SPI на LCD
+// Восстановление SPI для LCD
+void restoreLcdSpi() {
   SPI.end();
   SPI.begin(LCD_SCK, -1, LCD_MOSI, LCD_CS);
   SPI.setDataMode(SPI_MODE0);
   SPI.setBitOrder(MSBFIRST);
   SPI.setFrequency(40000000);
+}
+
+// Запись на NTAG (страницами по 4 байта)
+bool writeNtagData(String filamentId) {
+  Serial.println("[NFC] Запись на NTAG...");
+
+  byte idBytes[48];
+  int idLen = filamentId.length();
+  if (idLen > 40) idLen = 40;  // Ограничение для NTAG
+  filamentId.getBytes(idBytes, idLen + 1);
+
+  // NDEF формат для NTAG
+  byte payloadLength = 3 + idLen;
+  byte messageLength = 5 + payloadLength;
+
+  // Формируем NDEF сообщение (до 48 байт)
+  byte ndefMsg[48];
+  memset(ndefMsg, 0, 48);
+
+  ndefMsg[0] = 0x03;              // NDEF Message TLV
+  ndefMsg[1] = messageLength;     // Длина
+  ndefMsg[2] = 0xD1;              // Record Header
+  ndefMsg[3] = 0x01;              // Type Length
+  ndefMsg[4] = payloadLength;     // Payload Length
+  ndefMsg[5] = 0x54;              // Type 'T'
+  ndefMsg[6] = 0x02;              // UTF-8, lang=2
+  ndefMsg[7] = 0x65;              // 'e'
+  ndefMsg[8] = 0x6E;              // 'n'
+
+  for (int i = 0; i < idLen; i++) {
+    ndefMsg[9 + i] = idBytes[i];
+  }
+  ndefMsg[9 + idLen] = 0xFE;      // NDEF Terminator
+
+  // NTAG пишется страницами по 4 байта начиная со страницы 4
+  // Используем MIFARE_Ultralight_Write
+  int totalBytes = 10 + idLen;
+  int numPages = (totalBytes + 3) / 4;
+
+  for (int page = 0; page < numPages && page < 12; page++) {
+    byte pageData[4];
+    for (int i = 0; i < 4; i++) {
+      int idx = page * 4 + i;
+      pageData[i] = (idx < 48) ? ndefMsg[idx] : 0x00;
+    }
+
+    MFRC522::StatusCode status = rfid.MIFARE_Ultralight_Write(4 + page, pageData, 4);
+    if (status != MFRC522::STATUS_OK) {
+      Serial.printf("[NFC] NTAG ошибка записи страницы %d: %s\n", 4 + page, rfid.GetStatusCodeName(status));
+      return false;
+    }
+  }
+
+  Serial.printf("[NFC] NTAG записано: %s (%d страниц)\n", filamentId.c_str(), numPages);
+  return true;
+}
+
+// Запись на MIFARE Classic
+bool writeMifareData(String filamentId) {
+  Serial.println("[NFC] Запись на MIFARE...");
+
+  MFRC522::MIFARE_Key key;
+  for (byte i = 0; i < 6; i++) {
+    key.keyByte[i] = 0xFF;
+  }
+
+  byte trailerBlock = 7;
+  MFRC522::StatusCode status = rfid.PCD_Authenticate(
+    MFRC522::PICC_CMD_MF_AUTH_KEY_A,
+    trailerBlock,
+    &key,
+    &(rfid.uid)
+  );
+
+  if (status != MFRC522::STATUS_OK) {
+    Serial.print("[NFC] MIFARE ошибка аутентификации: ");
+    Serial.println(rfid.GetStatusCodeName(status));
+    return false;
+  }
+
+  byte idBytes[32];
+  int idLen = filamentId.length();
+  if (idLen > 32) idLen = 32;
+  filamentId.getBytes(idBytes, idLen + 1);
+
+  byte payloadLength = 3 + idLen;
+  byte messageLength = 5 + payloadLength;
+
+  byte buffer1[16];
+  memset(buffer1, 0, 16);
+
+  buffer1[0] = 0x03;
+  buffer1[1] = messageLength;
+  buffer1[2] = 0xD1;
+  buffer1[3] = 0x01;
+  buffer1[4] = payloadLength;
+  buffer1[5] = 0x54;
+  buffer1[6] = 0x02;
+  buffer1[7] = 0x65;
+  buffer1[8] = 0x6E;
+
+  int firstBlockPayload = (idLen > 7) ? 7 : idLen;
+  for (int i = 0; i < firstBlockPayload; i++) {
+    buffer1[9 + i] = idBytes[i];
+  }
+
+  status = rfid.MIFARE_Write(4, buffer1, 16);
+  if (status != MFRC522::STATUS_OK) {
+    Serial.print("[NFC] MIFARE ошибка записи блока 4: ");
+    Serial.println(rfid.GetStatusCodeName(status));
+    return false;
+  }
+
+  if (idLen > 7) {
+    byte buffer2[16];
+    memset(buffer2, 0, 16);
+
+    int remainingBytes = idLen - 7;
+    if (remainingBytes > 16) remainingBytes = 16;
+
+    for (int i = 0; i < remainingBytes; i++) {
+      buffer2[i] = idBytes[7 + i];
+    }
+    if (remainingBytes < 16) {
+      buffer2[remainingBytes] = 0xFE;
+    }
+
+    status = rfid.MIFARE_Write(5, buffer2, 16);
+    if (status != MFRC522::STATUS_OK) {
+      Serial.print("[NFC] MIFARE ошибка записи блока 5: ");
+      Serial.println(rfid.GetStatusCodeName(status));
+    }
+  } else {
+    if (9 + firstBlockPayload < 16) {
+      buffer1[9 + firstBlockPayload] = 0xFE;
+      rfid.MIFARE_Write(4, buffer1, 16);
+    }
+  }
+
+  Serial.printf("[NFC] MIFARE записано: %s\n", filamentId.c_str());
+  return true;
+}
+
+// Запись данных на NFC карту (поддержка MIFARE Classic и NTAG)
+bool writeNfcData(String filamentId) {
+  Serial.println("[NFC] Начало записи...");
+
+  // Переключаем SPI на NFC
+  SPI.end();
+  SPI.begin(LCD_SCK, RC522_MISO, LCD_MOSI, RC522_CS);
+
+  // Проверяем наличие карты
+  if (!rfid.PICC_IsNewCardPresent()) {
+    Serial.println("[NFC] Карта не обнаружена");
+    restoreLcdSpi();
+    return false;
+  }
+
+  if (!rfid.PICC_ReadCardSerial()) {
+    Serial.println("[NFC] Ошибка чтения карты");
+    restoreLcdSpi();
+    return false;
+  }
+
+  bool success = false;
+
+  // Определяем тип карты и вызываем соответствующую функцию записи
+  if (isNtagCard()) {
+    Serial.println("[NFC] Тип карты: NTAG/Ultralight");
+    success = writeNtagData(filamentId);
+  } else {
+    Serial.println("[NFC] Тип карты: MIFARE Classic");
+    success = writeMifareData(filamentId);
+  }
+
+  rfid.PICC_HaltA();
+  rfid.PCD_StopCrypto1();
+
+  // Возвращаем SPI на LCD
+  restoreLcdSpi();
   
   return true;
 }
