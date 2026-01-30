@@ -274,10 +274,20 @@ class _FilamentListScreenState extends State<FilamentListScreen> {
   }
 }
 
-class _FilamentTile extends StatelessWidget {
+class _FilamentTile extends StatefulWidget {
   final Filament filament;
 
   const _FilamentTile({required this.filament});
+
+  @override
+  State<_FilamentTile> createState() => _FilamentTileState();
+}
+
+class _FilamentTileState extends State<_FilamentTile> {
+  bool _isLoadingDetails = false;
+  Filament? _fullFilament;
+
+  Filament get _displayFilament => _fullFilament ?? widget.filament;
 
   @override
   Widget build(BuildContext context) {
@@ -285,76 +295,128 @@ class _FilamentTile extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: ListTile(
         leading: CircleAvatar(
-          child: Text(filament.material.substring(0, filament.material.length.clamp(0, 2))),
+          child: Text(widget.filament.material.substring(0, widget.filament.material.length.clamp(0, 2))),
         ),
-        title: Text('${filament.manufacturer} - ${filament.material}'),
+        title: Text('${widget.filament.manufacturer} - ${widget.filament.material}'),
         subtitle: Text(
-          '${filament.weight}г | Ø${filament.diameter}мм | Стол: ${filament.bedTemp ?? "-"}°C',
+          '${widget.filament.weight.toStringAsFixed(0)}г | Ø${widget.filament.diameter}мм',
         ),
-        trailing: filament.isCustom 
+        trailing: widget.filament.isCustom
           ? const Icon(Icons.star, color: Colors.amber)
-          : null,
+          : widget.filament.isPartial
+            ? const Icon(Icons.cloud_download, size: 18, color: Colors.grey)
+            : null,
         onTap: () => _showDetails(context),
       ),
     );
   }
 
+  Future<void> _loadFullProfile() async {
+    if (!widget.filament.isPartial || _fullFilament != null) return;
+
+    final bt = context.read<BluetoothService>();
+    if (!bt.isConnected) return;
+
+    setState(() => _isLoadingDetails = true);
+
+    final full = await bt.requestFullProfile(widget.filament.id);
+    if (full != null && mounted) {
+      setState(() {
+        _fullFilament = widget.filament.copyWithFullData(full);
+        _isLoadingDetails = false;
+      });
+    } else if (mounted) {
+      setState(() => _isLoadingDetails = false);
+    }
+  }
+
   void _showDetails(BuildContext context) {
+    // Загружаем полные данные при открытии
+    if (widget.filament.isPartial && _fullFilament == null) {
+      _loadFullProfile();
+    }
+
     showModalBottomSheet(
       context: context,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${filament.manufacturer} - ${filament.material}',
-              style: Theme.of(context).textTheme.titleLarge,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          final filament = _displayFilament;
+
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${filament.manufacturer} - ${filament.material}',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 16),
+                if (_isLoadingDetails)
+                  const Center(child: CircularProgressIndicator())
+                else ...[
+                  _infoRow('ID', filament.id),
+                  _infoRow('Плотность', '${filament.density} г/см³'),
+                  _infoRow('Вес филамента', '${filament.weight.toStringAsFixed(0)} г'),
+                  _infoRow('Вес катушки', '${filament.spoolWeight?.toStringAsFixed(0) ?? "-"} г'),
+                  _infoRow('Диаметр', '${filament.diameter} мм'),
+                  _infoRow('Температура стола', '${filament.bedTemp ?? "-"} °C'),
+                ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoadingDetails ? null : () async {
+                      final bt = context.read<BluetoothService>();
+                      if (!bt.isConnected) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Сначала подключитесь к устройству')),
+                        );
+                        return;
+                      }
+
+                      // Загружаем полные данные если профиль частичный
+                      var profileToSend = _displayFilament;
+                      if (profileToSend.isPartial) {
+                        final full = await bt.requestFullProfile(profileToSend.id);
+                        if (full != null) {
+                          profileToSend = profileToSend.copyWithFullData(full);
+                        } else {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Не удалось загрузить полные данные профиля')),
+                            );
+                          }
+                          return;
+                        }
+                      }
+
+                      final success = await bt.sendFilamentProfile(profileToSend);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(success ? 'Профиль отправлен' : 'Ошибка отправки')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.send),
+                    label: const Text('Отправить на держатель'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _isLoadingDetails ? null : () => _writeToNfc(context, ctx),
+                    icon: const Icon(Icons.nfc),
+                    label: const Text('Записать на NFC метку'),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            _infoRow('ID', filament.id),
-            _infoRow('Плотность', '${filament.density} г/см³'),
-            _infoRow('Вес филамента', '${filament.weight} г'),
-            _infoRow('Вес катушки', '${filament.spoolWeight ?? "-"} г'),
-            _infoRow('Тип катушки', filament.spoolType ?? '-'),
-            _infoRow('Диаметр', '${filament.diameter} мм'),
-            _infoRow('Температура стола', '${filament.bedTemp ?? "-"} °C'),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  final bt = context.read<BluetoothService>();
-                  if (!bt.isConnected) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Сначала подключитесь к устройству')),
-                    );
-                    return;
-                  }
-                  final success = await bt.sendFilamentProfile(filament);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(success ? 'Профиль отправлен' : 'Ошибка отправки')),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.send),
-                label: const Text('Отправить на держатель'),
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _writeToNfc(context, ctx),
-                icon: const Icon(Icons.nfc),
-                label: const Text('Записать на NFC метку'),
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -374,7 +436,8 @@ class _FilamentTile extends StatelessWidget {
 
   void _writeToNfc(BuildContext context, BuildContext bottomSheetContext) async {
     final bt = context.read<BluetoothService>();
-    
+    final filament = _displayFilament;
+
     if (!bt.isConnected) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Подключитесь к держателю для записи на NFC')),
@@ -423,9 +486,9 @@ class _FilamentTile extends StatelessWidget {
     }
 
     final success = await bt.writeNFC(filament.id);
-    
+
     await Future.delayed(const Duration(seconds: 3));
-    
+
     if (context.mounted) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(

@@ -49,10 +49,16 @@ class _RealtimeScreenState extends State<RealtimeScreen> {
           final remaining = data?.netWeight ?? 0;
           final percent = total > 0 ? (remaining / total).clamp(0.0, 1.0) : 0.0;
           
-          // Расчет длины (формула: длина = вес / (плотность * π * (диаметр/2)²))
-          final density = currentProfile?.density ?? 1.24;
-          final diameter = currentProfile?.diameter ?? 1.75;
-          final lengthMeters = remaining / (density * 3.14159 * (diameter / 2) * (diameter / 2)) / 1000;
+          // Расчет длины филамента
+          // Формула: объем = вес / плотность, длина = объем / площадь_сечения
+          final density = currentProfile?.density ?? 1.24;  // г/см³
+          final diameter = currentProfile?.diameter ?? 1.75;  // мм
+          final radiusMm = diameter / 2;
+          final areaMm2 = 3.14159 * radiusMm * radiusMm;  // мм²
+          final areaCm2 = areaMm2 / 100;  // см² (1 см² = 100 мм²)
+          final volumeCm3 = remaining / density;  // см³
+          final lengthCm = volumeCm3 / areaCm2;  // см
+          final lengthMeters = lengthCm / 100;  // метры
           
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),

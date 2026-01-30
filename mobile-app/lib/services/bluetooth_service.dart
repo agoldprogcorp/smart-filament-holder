@@ -71,6 +71,7 @@ class BluetoothService extends ChangeNotifier {
   Timer? _simulationTimer;
   Timer? _profileListTimeoutTimer; // ИСПРАВЛЕНИЕ: Таймер для отмены timeout
   Completer<Filament?>? _profileCompleter;
+  Completer<bool>? _addProfileCompleter;
   
   bool _isScanning = false;
   bool _isConnected = false;
@@ -383,6 +384,9 @@ class BluetoothService extends ChangeNotifier {
         } else {
           _profileCompleter?.complete(null);
         }
+      } else if (data['cmd'] == 'add_profile_response') {
+        debugPrint('[BLE] Add profile response: ${data['success']}');
+        _addProfileCompleter?.complete(data['success'] == true);
       } else {
         debugPrint('[BLE] Unknown cmd: ${data['cmd']}');
       }
@@ -528,21 +532,35 @@ class BluetoothService extends ChangeNotifier {
       notifyListeners();
       return true;
     }
-    
+
     if (_cmdChar == null) return false;
-    
+
     try {
+      // Создаём Completer для ожидания ответа от ESP32
+      _addProfileCompleter = Completer<bool>();
+
       Map<String, dynamic> cmd = {
         'cmd': 'add_profile',
         'data': profile.toJson(),
       };
       await _cmdChar!.write(utf8.encode(json.encode(cmd)), withoutResponse: false);
-      
-      // Add to local list immediately
-      _profiles.add(profile);
-      notifyListeners();
-      
-      return true;
+
+      // Ждём ответ от ESP32 (timeout 5 секунд)
+      final success = await _addProfileCompleter!.future.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => false,
+      );
+
+      if (success) {
+        // Добавляем в локальный список только при успехе
+        _profiles.add(profile);
+        notifyListeners();
+        debugPrint('[BLE] Profile added successfully');
+      } else {
+        debugPrint('[BLE] Failed to add profile to ESP32');
+      }
+
+      return success;
     } catch (e) {
       debugPrint('Add profile error: $e');
       return false;

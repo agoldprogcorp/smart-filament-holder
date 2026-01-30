@@ -680,8 +680,10 @@ void loop() {
         load_screen(6);
         
         if (currentFilament.weight > 0) {
-          float filamentOnly = currentFilament.weight - currentFilament.spool_weight;
-          float percent = (netWeight / filamentOnly) * 100.0f;
+          // weight - это вес чистого филамента (без катушки), spool_weight - вес пустой катушки
+          // netWeight = currentWeight - spool_weight (уже вычислено)
+          // percent = netWeight / weight * 100
+          float percent = (netWeight / currentFilament.weight) * 100.0f;
           if (percent > 100) percent = 100;
           if (percent < 0) percent = 0;
           current_percent = percent;
@@ -1260,9 +1262,9 @@ void updateWeightSensor() {
     update_weight(currentWeight);
     
     if (profile_loaded && currentFilament.weight > 0) {
-      // Процент от чистого веса филамента (без катушки)
-      float filamentOnly = currentFilament.weight - currentFilament.spool_weight;
-      float percent = (netWeight / filamentOnly) * 100.0f;
+      // weight - это вес чистого филамента (без катушки)
+      // netWeight = currentWeight - spool_weight (уже вычислено)
+      float percent = (netWeight / currentFilament.weight) * 100.0f;
       if (percent > 100) percent = 100;
       if (percent < 0) percent = 0;
       update_percent(percent);
@@ -1969,24 +1971,44 @@ void sendProfileList() {
   
   Serial.printf("[DB] Файл открыт, размер: %d байт\n", file.size());
   
+  // ОПТИМИЗАЦИЯ: Отправляем только краткую информацию (id, manufacturer, material, weight)
+  // Полные данные профиля запрашиваются отдельно через get_profile
   String response = "{\"cmd\":\"profile_list\",\"profiles\":[";
   bool first = true;
   int profileCount = 0;
-  int maxProfiles = 500; // Увеличено для полной базы профилей
-  
+  int maxProfiles = 500;
+
   while (file.available() && profileCount < maxProfiles) {
     String line = file.readStringUntil('\n');
     line.trim();
-    
+
     if (line.length() > 0 && line.startsWith("{")) {
-      // Отправляем полный профиль (вся строка JSON)
-      if (!first) response += ",";
-      response += line;
-      first = false;
-      profileCount++;
+      // Парсим JSON для извлечения только нужных полей
+      DynamicJsonDocument doc(512);
+      DeserializationError error = deserializeJson(doc, line);
+
+      if (!error) {
+        if (!first) response += ",";
+
+        // Формируем краткий профиль (экономия ~60% трафика)
+        response += "{\"id\":\"";
+        response += doc["id"].as<String>();
+        response += "\",\"manufacturer\":\"";
+        response += doc["manufacturer"].as<String>();
+        response += "\",\"material\":\"";
+        response += doc["material"].as<String>();
+        response += "\",\"weight\":";
+        response += String(doc["weight"].as<float>(), 0);
+        response += ",\"diameter\":";
+        response += String(doc["diameter"].as<float>(), 2);
+        response += "}";
+
+        first = false;
+        profileCount++;
+      }
     }
   }
-  
+
   response += "]}";
   file.close();
   
