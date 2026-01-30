@@ -18,3 +18,443 @@
 {"id": "3dxtech_asa_4000.0_1.75", "manufacturer": "3DXTECH", "material": "ASA", "density": 1.07, "weight": 4000.0, "spool_weight": 1000.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 100}
 {"id": "3dxtech_asa_4000.0_2.85", "manufacturer": "3DXTECH", "material": "ASA", "density": 1.07, "weight": 4000.0, "spool_weight": 1000.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 100}
 {"id": "3dxtech_asa_750.0_1.75", "manufacturer": "3DXTECH", "material": "ASA", "density": 1.11, "weight": 750.0, "spool_weight": 310.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 100}
+{"id": "3dxtech_asa_750.0_2.85", "manufacturer": "3DXTECH", "material": "ASA", "density": 1.11, "weight": 750.0, "spool_weight": 310.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 100}
+{"id": "3dxtech_asa_2000.0_1.75", "manufacturer": "3DXTECH", "material": "ASA", "density": 1.11, "weight": 2000.0, "spool_weight": 945.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 100}
+{"id": "3dxtech_asa_2000.0_2.85", "manufacturer": "3DXTECH", "material": "ASA", "density": 1.11, "weight": 2000.0, "spool_weight": 945.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 100}
+{"id": "3dxtech_hips_1000.0_1.75", "manufacturer": "3DXTECH", "material": "HIPS", "density": 1.04, "weight": 1000.0, "spool_weight": 340.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 105}
+{"id": "3dxtech_hips_1000.0_2.85", "manufacturer": "3DXTECH", "material": "HIPS", "density": 1.04, "weight": 1000.0, "spool_weight": 340.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 105}
+{"id": "3dxtech_hips_4000.0_1.75", "manufacturer": "3DXTECH", "material": "HIPS", "density": 1.04, "weight": 4000.0, "spool_weight": 1000.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 105}
+{"id": "3dxtech_hips_4000.0_2.85", "manufacturer": "3DXTECH", "material": "HIPS", "density": 1.04, "weight": 4000.0, "spool_weight": 1000.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 105}
+{"id": "3dxtech_pa12_500.0_1.75", "manufacturer": "3DXTECH", "material": "PA12", "density": 1.16, "weight": 500.0, "spool_weight": 240.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 100}
+{"id": "3dxtech_pa12_2000.0_1.75", "manufacturer": "3DXTECH", "material": "PA12", "density": 1.16, "weight": 2000.0, "spool_weight": 945.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 100}
+{"id": "3dxtech_pa6_500.0_1.75", "manufacturer": "3DXTECH", "material": "PA6", "density": 1.17, "weight": 500.0, "spool_weight": 240.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 95}
+{"id": "3dxtech_pa6_500.0_2.85", "manufacturer": "3DXTECH", "material": "PA6", "density": 1.17, "weight": 500.0, "spool_weight": 240.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 95}
+{"id": "3dxtech_pa6_1000.0_1.75", "manufacturer": "3DXTECH", "material": "PA6", "density": 1.17, "weight": 1000.0, "spool_weight": 340.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 95}
+{"id": "3dxtech_pa6_1000.0_2.85", "manufacturer": "3DXTECH", "material": "PA6", "density": 1.17, "weight": 1000.0, "spool_weight": 340.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 95}
+{"id": "3dxtech_pa6_2000.0_1.75", "manufacturer": "3DXTECH", "material": "PA6", "density": 1.17, "weight": 2000.0, "spool_weight": 945.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 95}
+{"id": "3dxtech_pa6_2000.0_2.85", "manufacturer": "3DXTECH", "material": "PA6", "density": 1.17, "weight": 2000.0, "spool_weight": 945.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 95}
+{"id": "3dxtech_pc_500.0_1.75", "manufacturer": "3DXTECH", "material": "PC", "density": 1.2, "weight": 500.0, "spool_weight": 240.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 115}
+{"id": "3dxtech_pc_2000.0_1.75", "manufacturer": "3DXTECH", "material": "PC", "density": 1.2, "weight": 2000.0, "spool_weight": 945.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 115}
+{"id": "3dxtech_pc_750.0_1.75", "manufacturer": "3DXTECH", "material": "PC", "density": 1.36, "weight": 750.0, "spool_weight": 310.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 115}
+{"id": "3dxtech_pc_750.0_2.85", "manufacturer": "3DXTECH", "material": "PC", "density": 1.36, "weight": 750.0, "spool_weight": 310.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "3dxtech_pc_2000.0_2.85", "manufacturer": "3DXTECH", "material": "PC", "density": 1.36, "weight": 2000.0, "spool_weight": 945.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "3dxtech_pc+abs_500.0_1.75", "manufacturer": "3DXTECH", "material": "PC+ABS", "density": 1.14, "weight": 500.0, "spool_weight": 240.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 115}
+{"id": "3dxtech_pc+abs_500.0_2.85", "manufacturer": "3DXTECH", "material": "PC+ABS", "density": 1.14, "weight": 500.0, "spool_weight": 240.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 115}
+{"id": "3dxtech_pc+abs_2000.0_1.75", "manufacturer": "3DXTECH", "material": "PC+ABS", "density": 1.14, "weight": 2000.0, "spool_weight": 945.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 115}
+{"id": "3dxtech_pc+abs_2000.0_2.85", "manufacturer": "3DXTECH", "material": "PC+ABS", "density": 1.14, "weight": 2000.0, "spool_weight": 945.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 115}
+{"id": "3dxtech_petg_750.0_1.75", "manufacturer": "3DXTECH", "material": "PETG", "density": 1.34, "weight": 750.0, "spool_weight": 310.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 80}
+{"id": "3dxtech_petg_750.0_2.85", "manufacturer": "3DXTECH", "material": "PETG", "density": 1.34, "weight": 750.0, "spool_weight": 310.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 80}
+{"id": "3dxtech_petg_2000.0_1.75", "manufacturer": "3DXTECH", "material": "PETG", "density": 1.34, "weight": 2000.0, "spool_weight": 945.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 80}
+{"id": "3dxtech_petg_2000.0_2.85", "manufacturer": "3DXTECH", "material": "PETG", "density": 1.34, "weight": 2000.0, "spool_weight": 945.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 80}
+{"id": "3dxtech_pla_500.0_1.75", "manufacturer": "3DXTECH", "material": "PLA", "density": 1.29, "weight": 500.0, "spool_weight": 240.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 41}
+{"id": "3dxtech_pla_500.0_2.85", "manufacturer": "3DXTECH", "material": "PLA", "density": 1.29, "weight": 500.0, "spool_weight": 240.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 41}
+{"id": "3dxtech_pla_750.0_1.75", "manufacturer": "3DXTECH", "material": "PLA", "density": 1.29, "weight": 750.0, "spool_weight": 310.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 41}
+{"id": "3dxtech_pla_750.0_2.85", "manufacturer": "3DXTECH", "material": "PLA", "density": 1.29, "weight": 750.0, "spool_weight": 310.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 41}
+{"id": "3dxtech_pla_2000.0_1.75", "manufacturer": "3DXTECH", "material": "PLA", "density": 1.29, "weight": 2000.0, "spool_weight": 945.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 41}
+{"id": "3dxtech_pla_2000.0_2.85", "manufacturer": "3DXTECH", "material": "PLA", "density": 1.29, "weight": 2000.0, "spool_weight": 945.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 41}
+{"id": "anycubic_abs_1000_1.75", "manufacturer": "ANYCUBIC", "material": "ABS", "density": 1.05, "weight": 1000, "spool_weight": 127, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "anycubic_petg_1000.0_1.75", "manufacturer": "ANYCUBIC", "material": "PETG", "density": 1.3, "weight": 1000.0, "spool_weight": 127, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 70}
+{"id": "anycubic_pla_1000_1.75", "manufacturer": "ANYCUBIC", "material": "PLA", "density": 1.24, "weight": 1000, "spool_weight": 127, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "anycubic_pla+_1000_1.75", "manufacturer": "ANYCUBIC", "material": "PLA+", "density": 1.23, "weight": 1000, "spool_weight": 127, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 55}
+{"id": "anycubic_tpu_1000_1.75", "manufacturer": "ANYCUBIC", "material": "TPU", "density": 1.23, "weight": 1000, "spool_weight": 127, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 55}
+{"id": "aurapol_asa_850.0_1.75", "manufacturer": "AURAPOL", "material": "ASA", "density": 1.039, "weight": 850.0, "spool_weight": 250.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": null}
+{"id": "aurapol_petg_1000.0_1.75", "manufacturer": "AURAPOL", "material": "PETG", "density": 1.259, "weight": 1000.0, "spool_weight": 250.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": null}
+{"id": "aurapol_pla_1000.0_1.75", "manufacturer": "AURAPOL", "material": "PLA", "density": 1.223, "weight": 1000.0, "spool_weight": 250.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": null}
+{"id": "abaflex_pla_1000.0_1.75", "manufacturer": "Abaflex", "material": "PLA", "density": 1.223, "weight": 1000.0, "spool_weight": 100.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "amazonbasics_abs_1000.0_1.75", "manufacturer": "AmazonBasics", "material": "ABS", "density": 1.27, "weight": 1000.0, "spool_weight": 252, "spool_type": null, "diameter": 1.75, "bed_temp": 90}
+{"id": "amazonbasics_petg_1000.0_1.75", "manufacturer": "AmazonBasics", "material": "PETG", "density": 1.29, "weight": 1000.0, "spool_weight": 390, "spool_type": null, "diameter": 1.75, "bed_temp": 70}
+{"id": "amazonbasics_pla_1000.0_1.75", "manufacturer": "AmazonBasics", "material": "PLA", "density": 1.25, "weight": 1000.0, "spool_weight": 232, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 55}
+{"id": "ambrosia_abs_1000_1.75", "manufacturer": "Ambrosia", "material": "ABS", "density": 1.03, "weight": 1000, "spool_weight": 130.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "ambrosia_asa_1000_1.75", "manufacturer": "Ambrosia", "material": "ASA", "density": 1.08, "weight": 1000, "spool_weight": 130.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "ambrosia_asa_2000_1.75", "manufacturer": "Ambrosia", "material": "ASA", "density": 1.08, "weight": 2000, "spool_weight": 632.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "ambrosia_asa_5000_1.75", "manufacturer": "Ambrosia", "material": "ASA", "density": 1.08, "weight": 5000, "spool_weight": 819.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "ambrosia_asa-cf_1000_1.75", "manufacturer": "Ambrosia", "material": "ASA-CF", "density": 1.09, "weight": 1000, "spool_weight": 130.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "ambrosia_asa-gf_1000_1.75", "manufacturer": "Ambrosia", "material": "ASA-GF", "density": 1.1, "weight": 1000, "spool_weight": 130.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "ambrosia_pc-cf_1000_1.75", "manufacturer": "Ambrosia", "material": "PC-CF", "density": 1.36, "weight": 1000, "spool_weight": 130.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "ambrosia_pcabs_1000_1.75", "manufacturer": "Ambrosia", "material": "PCABS", "density": 1.14, "weight": 1000, "spool_weight": 130.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "ambrosia_petg_1000_1.75", "manufacturer": "Ambrosia", "material": "PETG", "density": 1.27, "weight": 1000, "spool_weight": 130.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "ambrosia_pha_1000_1.75", "manufacturer": "Ambrosia", "material": "PHA", "density": 1.21, "weight": 1000, "spool_weight": 174.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "ambrosia_pla_1000_1.75", "manufacturer": "Ambrosia", "material": "PLA", "density": 1.25, "weight": 1000, "spool_weight": 130.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "ambrosia_tpu_1000_1.75", "manufacturer": "Ambrosia", "material": "TPU", "density": 1.23, "weight": 1000, "spool_weight": 130.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "azurefilm_abs_1000.0_1.75", "manufacturer": "AzureFilm", "material": "ABS", "density": 1.13, "weight": 1000.0, "spool_weight": 164, "spool_type": null, "diameter": 1.75, "bed_temp": 110}
+{"id": "azurefilm_asa_1000.0_1.75", "manufacturer": "AzureFilm", "material": "ASA", "density": 1.07, "weight": 1000.0, "spool_weight": 164, "spool_type": null, "diameter": 1.75, "bed_temp": 100}
+{"id": "azurefilm_cf_1000.0_1.75", "manufacturer": "AzureFilm", "material": "CF", "density": 1.24, "weight": 1000.0, "spool_weight": 164, "spool_type": null, "diameter": 1.75, "bed_temp": 110}
+{"id": "azurefilm_pc_1000.0_1.75", "manufacturer": "AzureFilm", "material": "PC", "density": 1.04, "weight": 1000.0, "spool_weight": 164, "spool_type": null, "diameter": 1.75, "bed_temp": 110}
+{"id": "azurefilm_pctg_1000.0_1.75", "manufacturer": "AzureFilm", "material": "PCTG", "density": 1.29, "weight": 1000.0, "spool_weight": 164, "spool_type": null, "diameter": 1.75, "bed_temp": 80}
+{"id": "azurefilm_petg_1000.0_1.75", "manufacturer": "AzureFilm", "material": "PETG", "density": 1.29, "weight": 1000.0, "spool_weight": 164, "spool_type": null, "diameter": 1.75, "bed_temp": 80}
+{"id": "azurefilm_pla_1000.0_1.75", "manufacturer": "AzureFilm", "material": "PLA", "density": 1.24, "weight": 1000.0, "spool_weight": 164, "spool_type": null, "diameter": 1.75, "bed_temp": 55}
+{"id": "azurefilm_tpu_1000.0_1.75", "manufacturer": "AzureFilm", "material": "TPU", "density": 1.12, "weight": 1000.0, "spool_weight": 164, "spool_type": null, "diameter": 1.75, "bed_temp": 60}
+{"id": "bambu-lab_abs_1000_1.75", "manufacturer": "Bambu Lab", "material": "ABS", "density": 1.05, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 90}
+{"id": "bambu-lab_abs_500_1.75", "manufacturer": "Bambu Lab", "material": "ABS", "density": 1.16, "weight": 500, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 90}
+{"id": "bambu-lab_abs-gf_1000_1.75", "manufacturer": "Bambu Lab", "material": "ABS-GF", "density": 1.08, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 90}
+{"id": "bambu-lab_asa_1000_1.75", "manufacturer": "Bambu Lab", "material": "ASA", "density": 1.05, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 90}
+{"id": "bambu-lab_asa-cf_1000_1.75", "manufacturer": "Bambu Lab", "material": "ASA-CF", "density": 1.02, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 100}
+{"id": "bambu-lab_pa_500_1.75", "manufacturer": "Bambu Lab", "material": "PA", "density": 1.17, "weight": 500, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 90}
+{"id": "bambu-lab_pa6-cf_1000_1.75", "manufacturer": "Bambu Lab", "material": "PA6-CF", "density": 1.09, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 90}
+{"id": "bambu-lab_pa6-cf_500_1.75", "manufacturer": "Bambu Lab", "material": "PA6-CF", "density": 1.09, "weight": 500, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 90}
+{"id": "bambu-lab_pa6-gf_1000_1.75", "manufacturer": "Bambu Lab", "material": "PA6-GF", "density": 1.09, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 90}
+{"id": "bambu-lab_paht-cf_1000_1.75", "manufacturer": "Bambu Lab", "material": "PAHT-CF", "density": 1.06, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 90}
+{"id": "bambu-lab_paht-cf_500_1.75", "manufacturer": "Bambu Lab", "material": "PAHT-CF", "density": 1.06, "weight": 500, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 90}
+{"id": "bambu-lab_pc_1000_1.75", "manufacturer": "Bambu Lab", "material": "PC", "density": 1.2, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 100}
+{"id": "bambu-lab_pet-cf_1000_1.75", "manufacturer": "Bambu Lab", "material": "PET-CF", "density": 1.29, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 90}
+{"id": "bambu-lab_pet-cf_500_1.75", "manufacturer": "Bambu Lab", "material": "PET-CF", "density": 1.29, "weight": 500, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 90}
+{"id": "bambu-lab_petg_1000_1.75", "manufacturer": "Bambu Lab", "material": "PETG", "density": 1.25, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 70}
+{"id": "bambu-lab_petg-cf_1000_1.75", "manufacturer": "Bambu Lab", "material": "PETG-CF", "density": 1.25, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 75}
+{"id": "bambu-lab_pla_1000_1.75", "manufacturer": "Bambu Lab", "material": "PLA", "density": 1.26, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 60}
+{"id": "bambu-lab_pla_500_1.75", "manufacturer": "Bambu Lab", "material": "PLA", "density": 1.33, "weight": 500, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 40}
+{"id": "bambu-lab_pla+wood_1000_1.75", "manufacturer": "Bambu Lab", "material": "PLA+WOOD", "density": 1.21, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 40}
+{"id": "bambu-lab_pla-cf_1000_1.75", "manufacturer": "Bambu Lab", "material": "PLA-CF", "density": 1.22, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 45}
+{"id": "bambu-lab_pps-cf_1000_1.75", "manufacturer": "Bambu Lab", "material": "PPS-CF", "density": 1.26, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 110}
+{"id": "bambu-lab_pva_500_1.75", "manufacturer": "Bambu Lab", "material": "PVA", "density": 1.27, "weight": 500, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 55}
+{"id": "bambu-lab_tpu_1000_1.75", "manufacturer": "Bambu Lab", "material": "TPU", "density": 1.22, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 30}
+{"id": "bambu-lab_tpu-85a_1000_1.75", "manufacturer": "Bambu Lab", "material": "TPU-85A", "density": 1.24, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 30}
+{"id": "bambu-lab_tpu-90a_1000_1.75", "manufacturer": "Bambu Lab", "material": "TPU-90A", "density": 1.24, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 30}
+{"id": "bambu-lab_tpu-95a_1000_1.75", "manufacturer": "Bambu Lab", "material": "TPU-95A", "density": 1.22, "weight": 1000, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 30}
+{"id": "cc3d_abs_1000.0_1.75", "manufacturer": "CC3D", "material": "ABS", "density": 1.08, "weight": 1000.0, "spool_weight": 180, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "cc3d_petg_1000.0_1.75", "manufacturer": "CC3D", "material": "PETG", "density": 1.27, "weight": 1000.0, "spool_weight": 180, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 80}
+{"id": "cc3d_pla_1000.0_1.75", "manufacturer": "CC3D", "material": "PLA", "density": 1.21, "weight": 1000.0, "spool_weight": 180, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 50}
+{"id": "cr3d_abs_1000.0_1.75", "manufacturer": "CR3D", "material": "ABS", "density": 1.05, "weight": 1000.0, "spool_weight": 231, "spool_type": null, "diameter": 1.75, "bed_temp": 110}
+{"id": "cr3d_abs+gf20_1000.0_1.75", "manufacturer": "CR3D", "material": "ABS+GF20", "density": 1.18, "weight": 1000.0, "spool_weight": 231, "spool_type": null, "diameter": 1.75, "bed_temp": 100}
+{"id": "cr3d_petg_1000.0_1.75", "manufacturer": "CR3D", "material": "PETG", "density": 1.24, "weight": 1000.0, "spool_weight": 248, "spool_type": null, "diameter": 1.75, "bed_temp": 80}
+{"id": "closin_petg_1000.0_1.75", "manufacturer": "Closin", "material": "PETG", "density": 1.27, "weight": 1000.0, "spool_weight": 146, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 85}
+{"id": "creality_abs_1000.0_1.75", "manufacturer": "Creality", "material": "ABS", "density": 1.04, "weight": 1000.0, "spool_weight": 120.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 80}
+{"id": "creality_petg_1000_1.75", "manufacturer": "Creality", "material": "PETG", "density": 1.25, "weight": 1000, "spool_weight": 225, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "creality_pla_1000_1.75", "manufacturer": "Creality", "material": "PLA", "density": 1.24, "weight": 1000, "spool_weight": 120, "spool_type": null, "diameter": 1.75, "bed_temp": 60}
+{"id": "creality_pla_1000.0_1.75", "manufacturer": "Creality", "material": "PLA", "density": 1.24, "weight": 1000.0, "spool_weight": 120.0, "spool_type": null, "diameter": 1.75, "bed_temp": 60}
+{"id": "das-filament_petg_800_1.75", "manufacturer": "Das Filament", "material": "PETG", "density": 1.27, "weight": 800, "spool_weight": 250, "spool_type": null, "diameter": 1.75, "bed_temp": 75}
+{"id": "das-filament_pla_800_1.75", "manufacturer": "Das Filament", "material": "PLA", "density": 1.23, "weight": 800, "spool_weight": 212, "spool_type": null, "diameter": 1.75, "bed_temp": 60}
+{"id": "deeplee_pla+_1000.0_1.75", "manufacturer": "Deeplee", "material": "PLA+", "density": 1.25, "weight": 1000.0, "spool_weight": 140, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 60}
+{"id": "devil-design_abs+_1000_1.75", "manufacturer": "Devil Design", "material": "ABS+", "density": 1.04, "weight": 1000, "spool_weight": 260, "spool_type": null, "diameter": 1.75, "bed_temp": 100}
+{"id": "devil-design_asa_1000_1.75", "manufacturer": "Devil Design", "material": "ASA", "density": 1.07, "weight": 1000, "spool_weight": 260, "spool_type": null, "diameter": 1.75, "bed_temp": 100}
+{"id": "devil-design_hips_1000_1.75", "manufacturer": "Devil Design", "material": "HIPS", "density": 1.05, "weight": 1000, "spool_weight": 260, "spool_type": null, "diameter": 1.75, "bed_temp": 100}
+{"id": "devil-design_petg_1000_1.75", "manufacturer": "Devil Design", "material": "PETG", "density": 1.23, "weight": 1000, "spool_weight": 260, "spool_type": null, "diameter": 1.75, "bed_temp": 80}
+{"id": "devil-design_pla_1000_1.75", "manufacturer": "Devil Design", "material": "PLA", "density": 1.24, "weight": 1000, "spool_weight": 260, "spool_type": null, "diameter": 1.75, "bed_temp": 60}
+{"id": "devil-design_tpu-55d_1000_1.75", "manufacturer": "Devil Design", "material": "TPU-55D", "density": 1.23, "weight": 1000, "spool_weight": 260, "spool_type": null, "diameter": 1.75, "bed_temp": 60}
+{"id": "elegoo_asa_1000_1.75", "manufacturer": "ELEGOO", "material": "ASA", "density": 1.09, "weight": 1000, "spool_weight": 154, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 95}
+{"id": "elegoo_petg_1000_1.75", "manufacturer": "ELEGOO", "material": "PETG", "density": 1.29, "weight": 1000, "spool_weight": 154, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 75}
+{"id": "elegoo_pla_1000_1.75", "manufacturer": "ELEGOO", "material": "PLA", "density": 1.26, "weight": 1000, "spool_weight": 154, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 60}
+{"id": "elegoo_pla+_1000_1.75", "manufacturer": "ELEGOO", "material": "PLA+", "density": 1.3, "weight": 1000, "spool_weight": 154, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 60}
+{"id": "eryone_petg_1000.0_1.75", "manufacturer": "Eryone", "material": "PETG", "density": 1.27, "weight": 1000.0, "spool_weight": 187.0, "spool_type": null, "diameter": 1.75, "bed_temp": 80}
+{"id": "eryone_pla_1000.0_1.75", "manufacturer": "Eryone", "material": "PLA", "density": 1.24, "weight": 1000.0, "spool_weight": 187, "spool_type": null, "diameter": 1.75, "bed_temp": 50}
+{"id": "extrudr_abs_750.0_1.75", "manufacturer": "Extrudr", "material": "ABS", "density": 1.06, "weight": 750.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_abs_750.0_2.85", "manufacturer": "Extrudr", "material": "ABS", "density": 1.06, "weight": 750.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 110}
+{"id": "extrudr_abs_2000.0_1.75", "manufacturer": "Extrudr", "material": "ABS", "density": 1.06, "weight": 2000.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_abs_2000.0_2.85", "manufacturer": "Extrudr", "material": "ABS", "density": 1.06, "weight": 2000.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 110}
+{"id": "extrudr_abs_10000.0_1.75", "manufacturer": "Extrudr", "material": "ABS", "density": 1.06, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_abs_10000.0_2.85", "manufacturer": "Extrudr", "material": "ABS", "density": 1.06, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 110}
+{"id": "extrudr_asa_750.0_1.75", "manufacturer": "Extrudr", "material": "ASA", "density": 1.05, "weight": 750.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_asa_750.0_2.85", "manufacturer": "Extrudr", "material": "ASA", "density": 1.05, "weight": 750.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 110}
+{"id": "extrudr_asa_2000.0_1.75", "manufacturer": "Extrudr", "material": "ASA", "density": 1.05, "weight": 2000.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_asa_2000.0_2.85", "manufacturer": "Extrudr", "material": "ASA", "density": 1.05, "weight": 2000.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 110}
+{"id": "extrudr_asa_5000.0_1.75", "manufacturer": "Extrudr", "material": "ASA", "density": 1.05, "weight": 5000.0, "spool_weight": 820.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_asa_5000.0_2.85", "manufacturer": "Extrudr", "material": "ASA", "density": 1.05, "weight": 5000.0, "spool_weight": 820.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 110}
+{"id": "extrudr_asa_10000.0_1.75", "manufacturer": "Extrudr", "material": "ASA", "density": 1.05, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_asa_10000.0_2.85", "manufacturer": "Extrudr", "material": "ASA", "density": 1.05, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 110}
+{"id": "extrudr_asa-cf_750.0_1.75", "manufacturer": "Extrudr", "material": "ASA-CF", "density": 1.14, "weight": 750.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_asa-cf_2000.0_1.75", "manufacturer": "Extrudr", "material": "ASA-CF", "density": 1.14, "weight": 2000.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_asa-gf_750.0_1.75", "manufacturer": "Extrudr", "material": "ASA-GF", "density": 1.1, "weight": 750.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_biofusion_800.0_1.75", "manufacturer": "Extrudr", "material": "BIOFUSION", "density": 1.25, "weight": 800.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "extrudr_biofusion_800.0_2.85", "manufacturer": "Extrudr", "material": "BIOFUSION", "density": 1.25, "weight": 800.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 60}
+{"id": "extrudr_flax_1100.0_1.75", "manufacturer": "Extrudr", "material": "FLAX", "density": 1.45, "weight": 1100.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "extrudr_flax_1100.0_2.85", "manufacturer": "Extrudr", "material": "FLAX", "density": 1.45, "weight": 1100.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 60}
+{"id": "extrudr_flax_2500.0_1.75", "manufacturer": "Extrudr", "material": "FLAX", "density": 1.45, "weight": 2500.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "extrudr_flax_2500.0_2.85", "manufacturer": "Extrudr", "material": "FLAX", "density": 1.45, "weight": 2500.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 60}
+{"id": "extrudr_flax_10000.0_1.75", "manufacturer": "Extrudr", "material": "FLAX", "density": 1.45, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "extrudr_flax_10000.0_2.85", "manufacturer": "Extrudr", "material": "FLAX", "density": 1.45, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 60}
+{"id": "extrudr_greentec_1100.0_1.75", "manufacturer": "Extrudr", "material": "GREENTEC", "density": 1.3, "weight": 1100.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_greentec_1100.0_2.85", "manufacturer": "Extrudr", "material": "GREENTEC", "density": 1.3, "weight": 1100.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_greentec_2500.0_1.75", "manufacturer": "Extrudr", "material": "GREENTEC", "density": 1.3, "weight": 2500.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_greentec_2500.0_2.85", "manufacturer": "Extrudr", "material": "GREENTEC", "density": 1.3, "weight": 2500.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_greentec_5000.0_1.75", "manufacturer": "Extrudr", "material": "GREENTEC", "density": 1.3, "weight": 5000.0, "spool_weight": 820.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_greentec_5000.0_2.85", "manufacturer": "Extrudr", "material": "GREENTEC", "density": 1.3, "weight": 5000.0, "spool_weight": 820.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_greentec_10000.0_1.75", "manufacturer": "Extrudr", "material": "GREENTEC", "density": 1.3, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_greentec_10000.0_2.85", "manufacturer": "Extrudr", "material": "GREENTEC", "density": 1.3, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_greentec_800.0_1.75", "manufacturer": "Extrudr", "material": "GREENTEC", "density": 1.35, "weight": 800.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_greentec_800.0_2.85", "manufacturer": "Extrudr", "material": "GREENTEC", "density": 1.35, "weight": 800.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_greentec-cf_800.0_1.75", "manufacturer": "Extrudr", "material": "GREENTEC-CF", "density": 1.2, "weight": 800.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_greentec-cf_800.0_2.85", "manufacturer": "Extrudr", "material": "GREENTEC-CF", "density": 1.2, "weight": 800.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_greentec-cf_2500.0_1.75", "manufacturer": "Extrudr", "material": "GREENTEC-CF", "density": 1.2, "weight": 2500.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_greentec-cf_2500.0_2.85", "manufacturer": "Extrudr", "material": "GREENTEC-CF", "density": 1.2, "weight": 2500.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_greentec-cf_5000.0_1.75", "manufacturer": "Extrudr", "material": "GREENTEC-CF", "density": 1.2, "weight": 5000.0, "spool_weight": 820.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_greentec-cf_5000.0_2.85", "manufacturer": "Extrudr", "material": "GREENTEC-CF", "density": 1.2, "weight": 5000.0, "spool_weight": 820.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_greentec-cf_10000.0_1.75", "manufacturer": "Extrudr", "material": "GREENTEC-CF", "density": 1.2, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_greentec-cf_10000.0_2.85", "manufacturer": "Extrudr", "material": "GREENTEC-CF", "density": 1.2, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_pa12_750.0_1.75", "manufacturer": "Extrudr", "material": "PA12", "density": 1.01, "weight": 750.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_pa12_2000.0_1.75", "manufacturer": "Extrudr", "material": "PA12", "density": 1.01, "weight": 2000.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_pa12-cf_500.0_1.75", "manufacturer": "Extrudr", "material": "PA12-CF", "density": 1.03, "weight": 500.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_pa12-cf_2000.0_1.75", "manufacturer": "Extrudr", "material": "PA12-CF", "density": 1.03, "weight": 2000.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_pcpbt_750.0_1.75", "manufacturer": "Extrudr", "material": "PCPBT", "density": 1.2, "weight": 750.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_pcpbt_2000.0_1.75", "manufacturer": "Extrudr", "material": "PCPBT", "density": 1.2, "weight": 2000.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_pcpbt-cf_700.0_1.75", "manufacturer": "Extrudr", "material": "PCPBT-CF", "density": 1.2, "weight": 700.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_pctg_800.0_1.75", "manufacturer": "Extrudr", "material": "PCTG", "density": 1.21, "weight": 800.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_pctg_2500.0_1.75", "manufacturer": "Extrudr", "material": "PCTG", "density": 1.21, "weight": 2500.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_pearl_1100.0_1.75", "manufacturer": "Extrudr", "material": "PEARL", "density": 1.25, "weight": 1100.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "extrudr_pearl_1100.0_2.85", "manufacturer": "Extrudr", "material": "PEARL", "density": 1.25, "weight": 1100.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 60}
+{"id": "extrudr_pearl_2500.0_1.75", "manufacturer": "Extrudr", "material": "PEARL", "density": 1.25, "weight": 2500.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "extrudr_pearl_2500.0_2.85", "manufacturer": "Extrudr", "material": "PEARL", "density": 1.25, "weight": 2500.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 60}
+{"id": "extrudr_pearl_10000.0_1.75", "manufacturer": "Extrudr", "material": "PEARL", "density": 1.25, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "extrudr_pearl_10000.0_2.85", "manufacturer": "Extrudr", "material": "PEARL", "density": 1.25, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 60}
+{"id": "extrudr_petg_1100.0_1.75", "manufacturer": "Extrudr", "material": "PETG", "density": 1.3, "weight": 1100.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_petg_1100.0_2.85", "manufacturer": "Extrudr", "material": "PETG", "density": 1.3, "weight": 1100.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_petg_2500.0_1.75", "manufacturer": "Extrudr", "material": "PETG", "density": 1.3, "weight": 2500.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_petg_2500.0_2.85", "manufacturer": "Extrudr", "material": "PETG", "density": 1.3, "weight": 2500.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_petg_5000.0_1.75", "manufacturer": "Extrudr", "material": "PETG", "density": 1.3, "weight": 5000.0, "spool_weight": 820.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_petg_5000.0_2.85", "manufacturer": "Extrudr", "material": "PETG", "density": 1.3, "weight": 5000.0, "spool_weight": 820.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_petg_10000.0_1.75", "manufacturer": "Extrudr", "material": "PETG", "density": 1.3, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_petg_10000.0_2.85", "manufacturer": "Extrudr", "material": "PETG", "density": 1.3, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_petg_1000.0_1.75", "manufacturer": "Extrudr", "material": "PETG", "density": 1.41, "weight": 1000.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_petg_1000.0_2.85", "manufacturer": "Extrudr", "material": "PETG", "density": 1.41, "weight": 1000.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_petg_800.0_1.75", "manufacturer": "Extrudr", "material": "PETG", "density": 1.29, "weight": 800.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 70}
+{"id": "extrudr_petg_800.0_2.85", "manufacturer": "Extrudr", "material": "PETG", "density": 1.29, "weight": 800.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 70}
+{"id": "extrudr_petg-cf_800.0_1.75", "manufacturer": "Extrudr", "material": "PETG-CF", "density": 1.29, "weight": 800.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_petg-cf_800.0_2.85", "manufacturer": "Extrudr", "material": "PETG-CF", "density": 1.29, "weight": 800.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_petg-cf_2500.0_1.75", "manufacturer": "Extrudr", "material": "PETG-CF", "density": 1.29, "weight": 2500.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_petg-cf_2500.0_2.85", "manufacturer": "Extrudr", "material": "PETG-CF", "density": 1.29, "weight": 2500.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_petg-cf_5000.0_1.75", "manufacturer": "Extrudr", "material": "PETG-CF", "density": 1.29, "weight": 5000.0, "spool_weight": 820.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_petg-cf_5000.0_2.85", "manufacturer": "Extrudr", "material": "PETG-CF", "density": 1.29, "weight": 5000.0, "spool_weight": 820.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_petg-cf_10000.0_1.75", "manufacturer": "Extrudr", "material": "PETG-CF", "density": 1.29, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_petg-cf_10000.0_2.85", "manufacturer": "Extrudr", "material": "PETG-CF", "density": 1.29, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_pla_1000.0_1.75", "manufacturer": "Extrudr", "material": "PLA", "density": 1.24, "weight": 1000.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_pla_1000.0_2.85", "manufacturer": "Extrudr", "material": "PLA", "density": 1.24, "weight": 1000.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 110}
+{"id": "extrudr_pla_2500.0_1.75", "manufacturer": "Extrudr", "material": "PLA", "density": 1.24, "weight": 2500.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_pla_2500.0_2.85", "manufacturer": "Extrudr", "material": "PLA", "density": 1.24, "weight": 2500.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 110}
+{"id": "extrudr_pla_5000.0_1.75", "manufacturer": "Extrudr", "material": "PLA", "density": 1.24, "weight": 5000.0, "spool_weight": 820.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_pla_5000.0_2.85", "manufacturer": "Extrudr", "material": "PLA", "density": 1.24, "weight": 5000.0, "spool_weight": 820.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 110}
+{"id": "extrudr_pla_10000.0_1.75", "manufacturer": "Extrudr", "material": "PLA", "density": 1.24, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "extrudr_pla_10000.0_2.85", "manufacturer": "Extrudr", "material": "PLA", "density": 1.24, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 110}
+{"id": "extrudr_tpu_750.0_1.75", "manufacturer": "Extrudr", "material": "TPU", "density": 1.2, "weight": 750.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_tpu_750.0_2.85", "manufacturer": "Extrudr", "material": "TPU", "density": 1.2, "weight": 750.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_tpu_2000.0_1.75", "manufacturer": "Extrudr", "material": "TPU", "density": 1.2, "weight": 2000.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_tpu_2000.0_2.85", "manufacturer": "Extrudr", "material": "TPU", "density": 1.2, "weight": 2000.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_tpu_5000.0_1.75", "manufacturer": "Extrudr", "material": "TPU", "density": 1.2, "weight": 5000.0, "spool_weight": 820.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_tpu_5000.0_2.85", "manufacturer": "Extrudr", "material": "TPU", "density": 1.2, "weight": 5000.0, "spool_weight": 820.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 90}
+{"id": "extrudr_tpu_500.0_1.75", "manufacturer": "Extrudr", "material": "TPU", "density": 1.2, "weight": 500.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "extrudr_tpu-cf_500.0_1.75", "manufacturer": "Extrudr", "material": "TPU-CF", "density": 1.22, "weight": 500.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_tpu-cf_2000.0_1.75", "manufacturer": "Extrudr", "material": "TPU-CF", "density": 1.22, "weight": 2000.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "extrudr_wood_800.0_1.75", "manufacturer": "Extrudr", "material": "WOOD", "density": 1.23, "weight": 800.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "extrudr_wood_800.0_2.85", "manufacturer": "Extrudr", "material": "WOOD", "density": 1.23, "weight": 800.0, "spool_weight": 260.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 60}
+{"id": "extrudr_wood_2000.0_1.75", "manufacturer": "Extrudr", "material": "WOOD", "density": 1.23, "weight": 2000.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "extrudr_wood_2000.0_2.85", "manufacturer": "Extrudr", "material": "WOOD", "density": 1.23, "weight": 2000.0, "spool_weight": 600.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 60}
+{"id": "extrudr_wood_10000.0_1.75", "manufacturer": "Extrudr", "material": "WOOD", "density": 1.23, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "extrudr_wood_10000.0_2.85", "manufacturer": "Extrudr", "material": "WOOD", "density": 1.23, "weight": 10000.0, "spool_weight": 1020.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": 60}
+{"id": "fiberlogy_asa_750_1.75", "manufacturer": "Fiberlogy", "material": "ASA", "density": 1.07, "weight": 750, "spool_weight": 290, "spool_type": null, "diameter": 1.75, "bed_temp": 110}
+{"id": "filament-unger_abs+_800_1.75", "manufacturer": "Filament Unger", "material": "ABS+", "density": 1.02, "weight": 800, "spool_weight": null, "spool_type": null, "diameter": 1.75, "bed_temp": 100}
+{"id": "filament-unger_petg_1000_1.75", "manufacturer": "Filament Unger", "material": "PETG", "density": 1.29, "weight": 1000, "spool_weight": null, "spool_type": null, "diameter": 1.75, "bed_temp": 80}
+{"id": "filament-unger_pla+_1000_1.75", "manufacturer": "Filament Unger", "material": "PLA+", "density": 1.28, "weight": 1000, "spool_weight": null, "spool_type": null, "diameter": 1.75, "bed_temp": 60}
+{"id": "fillamentum_asa_750.0_1.75", "manufacturer": "Fillamentum", "material": "ASA", "density": 1.07, "weight": 750.0, "spool_weight": 230.0, "spool_type": null, "diameter": 1.75, "bed_temp": 95}
+{"id": "fillamentum_asa_750.0_2.85", "manufacturer": "Fillamentum", "material": "ASA", "density": 1.07, "weight": 750.0, "spool_weight": 230.0, "spool_type": null, "diameter": 2.85, "bed_temp": 95}
+{"id": "fillamentum_asa_2500.0_1.75", "manufacturer": "Fillamentum", "material": "ASA", "density": 1.07, "weight": 2500.0, "spool_weight": 590.0, "spool_type": null, "diameter": 1.75, "bed_temp": 95}
+{"id": "fillamentum_asa_2500.0_2.85", "manufacturer": "Fillamentum", "material": "ASA", "density": 1.07, "weight": 2500.0, "spool_weight": 590.0, "spool_type": null, "diameter": 2.85, "bed_temp": 95}
+{"id": "fillamentum_pla_750.0_1.75", "manufacturer": "Fillamentum", "material": "PLA", "density": 1.24, "weight": 750.0, "spool_weight": 230.0, "spool_type": null, "diameter": 1.75, "bed_temp": 55}
+{"id": "fillamentum_pla_750.0_2.85", "manufacturer": "Fillamentum", "material": "PLA", "density": 1.24, "weight": 750.0, "spool_weight": 230.0, "spool_type": null, "diameter": 2.85, "bed_temp": 55}
+{"id": "fillamentum_pla_2500.0_1.75", "manufacturer": "Fillamentum", "material": "PLA", "density": 1.24, "weight": 2500.0, "spool_weight": 590.0, "spool_type": null, "diameter": 1.75, "bed_temp": 55}
+{"id": "fillamentum_pla_2500.0_2.85", "manufacturer": "Fillamentum", "material": "PLA", "density": 1.24, "weight": 2500.0, "spool_weight": 590.0, "spool_type": null, "diameter": 2.85, "bed_temp": 55}
+{"id": "flashforge_pla_500.0_1.75", "manufacturer": "FlashForge", "material": "PLA", "density": 1.25, "weight": 500.0, "spool_weight": 142.0, "spool_type": null, "diameter": 1.75, "bed_temp": 60}
+{"id": "flashforge_pla_1000.0_1.75", "manufacturer": "FlashForge", "material": "PLA", "density": 1.25, "weight": 1000.0, "spool_weight": 170.0, "spool_type": null, "diameter": 1.75, "bed_temp": 60}
+{"id": "flashforge_pla_1000_1.75", "manufacturer": "FlashForge", "material": "PLA", "density": 1.25, "weight": 1000, "spool_weight": 120, "spool_type": null, "diameter": 1.75, "bed_temp": 60}
+{"id": "flashforge_pla_250.0_1.75", "manufacturer": "FlashForge", "material": "PLA", "density": 1.25, "weight": 250.0, "spool_weight": 142.0, "spool_type": null, "diameter": 1.75, "bed_temp": 60}
+{"id": "formfutura_petg_250.0_1.75", "manufacturer": "Formfutura", "material": "PETG", "density": 1.23, "weight": 250.0, "spool_weight": 130.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "formfutura_petg_250.0_2.85", "manufacturer": "Formfutura", "material": "PETG", "density": 1.23, "weight": 250.0, "spool_weight": 130.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "formfutura_petg_500.0_1.75", "manufacturer": "Formfutura", "material": "PETG", "density": 1.23, "weight": 500.0, "spool_weight": 130.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "formfutura_petg_500.0_2.85", "manufacturer": "Formfutura", "material": "PETG", "density": 1.23, "weight": 500.0, "spool_weight": 130.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "formfutura_petg_750.0_1.75", "manufacturer": "Formfutura", "material": "PETG", "density": 1.23, "weight": 750.0, "spool_weight": 150.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "formfutura_petg_750.0_2.85", "manufacturer": "Formfutura", "material": "PETG", "density": 1.23, "weight": 750.0, "spool_weight": 150.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "formfutura_petg_1000.0_1.75", "manufacturer": "Formfutura", "material": "PETG", "density": 1.23, "weight": 1000.0, "spool_weight": 185.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "formfutura_petg_1000.0_2.85", "manufacturer": "Formfutura", "material": "PETG", "density": 1.23, "weight": 1000.0, "spool_weight": 185.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "formfutura_petg_2300.0_1.75", "manufacturer": "Formfutura", "material": "PETG", "density": 1.23, "weight": 2300.0, "spool_weight": 265.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "formfutura_petg_2300.0_2.85", "manufacturer": "Formfutura", "material": "PETG", "density": 1.23, "weight": 2300.0, "spool_weight": 265.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "formfutura_pla_250.0_1.75", "manufacturer": "Formfutura", "material": "PLA", "density": 1.24, "weight": 250.0, "spool_weight": 130.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "formfutura_pla_250.0_2.85", "manufacturer": "Formfutura", "material": "PLA", "density": 1.24, "weight": 250.0, "spool_weight": 130.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "formfutura_pla_750.0_1.75", "manufacturer": "Formfutura", "material": "PLA", "density": 1.24, "weight": 750.0, "spool_weight": 160.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "formfutura_pla_750.0_2.85", "manufacturer": "Formfutura", "material": "PLA", "density": 1.24, "weight": 750.0, "spool_weight": 160.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "formfutura_pla_2300.0_1.75", "manufacturer": "Formfutura", "material": "PLA", "density": 1.24, "weight": 2300.0, "spool_weight": 265.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "formfutura_pla_2300.0_2.85", "manufacturer": "Formfutura", "material": "PLA", "density": 1.24, "weight": 2300.0, "spool_weight": 265.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "formfutura_pla_4500.0_1.75", "manufacturer": "Formfutura", "material": "PLA", "density": 1.24, "weight": 4500.0, "spool_weight": 330.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "formfutura_pla_4500.0_2.85", "manufacturer": "Formfutura", "material": "PLA", "density": 1.24, "weight": 4500.0, "spool_weight": 330.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "formfutura_pla_8000.0_1.75", "manufacturer": "Formfutura", "material": "PLA", "density": 1.24, "weight": 8000.0, "spool_weight": 1040.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": null}
+{"id": "formfutura_pla_8000.0_2.85", "manufacturer": "Formfutura", "material": "PLA", "density": 1.24, "weight": 8000.0, "spool_weight": 1040.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": null}
+{"id": "formfutura_pla_1000.0_1.75", "manufacturer": "Formfutura", "material": "PLA", "density": 1.24, "weight": 1000.0, "spool_weight": 210.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "formfutura_pla_1000.0_2.85", "manufacturer": "Formfutura", "material": "PLA", "density": 1.24, "weight": 1000.0, "spool_weight": 210.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "fusion_abs_1000_1.75", "manufacturer": "Fusion", "material": "ABS", "density": 1.05, "weight": 1000, "spool_weight": 162, "spool_type": null, "diameter": 1.75, "bed_temp": null}
+{"id": "fusion_asa_1000_1.75", "manufacturer": "Fusion", "material": "ASA", "density": 1.08, "weight": 1000, "spool_weight": 150, "spool_type": null, "diameter": 1.75, "bed_temp": null}
+{"id": "fusion_pla_1000_1.75", "manufacturer": "Fusion", "material": "PLA", "density": 1.22, "weight": 1000, "spool_weight": 162, "spool_type": null, "diameter": 1.75, "bed_temp": null}
+{"id": "geeetech_petg_1000.0_1.75", "manufacturer": "GEEETECH", "material": "PETG", "density": 1.25, "weight": 1000.0, "spool_weight": 180.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": null}
+{"id": "geeetech_pla_1000.0_1.75", "manufacturer": "GEEETECH", "material": "PLA", "density": 1.24, "weight": 1000.0, "spool_weight": 180.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "gst3d_abs_1000.0_1.75", "manufacturer": "GST3D", "material": "ABS", "density": 1.04, "weight": 1000.0, "spool_weight": 200, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "gst3d_asa_900.0_1.75", "manufacturer": "GST3D", "material": "ASA", "density": 1.05, "weight": 900.0, "spool_weight": 200, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 80}
+{"id": "gst3d_petg_1000.0_1.75", "manufacturer": "GST3D", "material": "PETG", "density": 1.26, "weight": 1000.0, "spool_weight": 200, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 70}
+{"id": "gst3d_petg-cf_1000.0_1.75", "manufacturer": "GST3D", "material": "PETG-CF", "density": 1.3, "weight": 1000.0, "spool_weight": 200, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 70}
+{"id": "gst3d_pla_1000.0_1.75", "manufacturer": "GST3D", "material": "PLA", "density": 1.24, "weight": 1000.0, "spool_weight": 200, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "gst3d_pla+_1000.0_1.75", "manufacturer": "GST3D", "material": "PLA+", "density": 1.24, "weight": 1000.0, "spool_weight": 200.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "gst3d_tpu_1000.0_1.75", "manufacturer": "GST3D", "material": "TPU", "density": 1.21, "weight": 1000.0, "spool_weight": 200, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 65}
+{"id": "hatchbox_abs_1000_1.75", "manufacturer": "Hatchbox", "material": "ABS", "density": 1.04, "weight": 1000, "spool_weight": 251, "spool_type": null, "diameter": 1.75, "bed_temp": 105}
+{"id": "hatchbox_pla_1000_1.75", "manufacturer": "Hatchbox", "material": "PLA", "density": 1.27, "weight": 1000, "spool_weight": 251, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "jayo_petg_1100.0_1.75", "manufacturer": "JAYO", "material": "PETG", "density": 1.25, "weight": 1100.0, "spool_weight": 120.0, "spool_type": null, "diameter": 1.75, "bed_temp": 80}
+{"id": "jayo_pla_1100.0_1.75", "manufacturer": "JAYO", "material": "PLA", "density": 1.24, "weight": 1100.0, "spool_weight": 120.0, "spool_type": null, "diameter": 1.75, "bed_temp": 60}
+{"id": "jayo_pla+_1100.0_1.75", "manufacturer": "JAYO", "material": "PLA+", "density": 1.24, "weight": 1100.0, "spool_weight": 120.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 60}
+{"id": "jayo_tpu_1100.0_1.75", "manufacturer": "JAYO", "material": "TPU", "density": 1.24, "weight": 1100.0, "spool_weight": 120.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 0}
+{"id": "ldo_abs_1000_1.75", "manufacturer": "LDO", "material": "ABS", "density": 1.06, "weight": 1000, "spool_weight": null, "spool_type": null, "diameter": 1.75, "bed_temp": null}
+{"id": "ldo_asa_1000_1.75", "manufacturer": "LDO", "material": "ASA", "density": 1.08, "weight": 1000, "spool_weight": null, "spool_type": null, "diameter": 1.75, "bed_temp": null}
+{"id": "ldo_asa-cf_1000_1.75", "manufacturer": "LDO", "material": "ASA-CF", "density": 1.1, "weight": 1000, "spool_weight": null, "spool_type": null, "diameter": 1.75, "bed_temp": null}
+{"id": "nth-grillon_pla_1000_1.75", "manufacturer": "NTH Grillon", "material": "PLA", "density": 1.25, "weight": 1000, "spool_weight": null, "spool_type": "plastic", "diameter": 1.75, "bed_temp": null}
+{"id": "nth-grillon_pla_1000_2.85", "manufacturer": "NTH Grillon", "material": "PLA", "density": 1.25, "weight": 1000, "spool_weight": null, "spool_type": "plastic", "diameter": 2.85, "bed_temp": null}
+{"id": "numakers_abs_1000_1.75", "manufacturer": "Numakers", "material": "ABS", "density": 1.05, "weight": 1000, "spool_weight": 260, "spool_type": null, "diameter": 1.75, "bed_temp": null}
+{"id": "numakers_asa_1000_1.75", "manufacturer": "Numakers", "material": "ASA", "density": 1.05, "weight": 1000, "spool_weight": 260, "spool_type": null, "diameter": 1.75, "bed_temp": null}
+{"id": "numakers_petg_1000_1.75", "manufacturer": "Numakers", "material": "PETG", "density": 1.27, "weight": 1000, "spool_weight": 200, "spool_type": null, "diameter": 1.75, "bed_temp": null}
+{"id": "numakers_pla_1000_1.75", "manufacturer": "Numakers", "material": "PLA", "density": 1.23, "weight": 1000, "spool_weight": 200, "spool_type": null, "diameter": 1.75, "bed_temp": 60}
+{"id": "numakers_pla+_1000_1.75", "manufacturer": "Numakers", "material": "PLA+", "density": 1.24, "weight": 1000, "spool_weight": 200, "spool_type": null, "diameter": 1.75, "bed_temp": null}
+{"id": "overture_abs_1000.0_1.75", "manufacturer": "Overture", "material": "ABS", "density": 1.15, "weight": 1000.0, "spool_weight": 147, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "overture_asa_1000.0_1.75", "manufacturer": "Overture", "material": "ASA", "density": 1.14, "weight": 1000.0, "spool_weight": 132, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "overture_petg_1000.0_1.75", "manufacturer": "Overture", "material": "PETG", "density": 1.25, "weight": 1000.0, "spool_weight": 132, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "overture_pla_1000.0_1.75", "manufacturer": "Overture", "material": "PLA", "density": 1.24, "weight": 1000.0, "spool_weight": 155, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 60}
+{"id": "overture_tpu_1000.0_1.75", "manufacturer": "Overture", "material": "TPU", "density": 1.19, "weight": 1000.0, "spool_weight": 174, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 35}
+{"id": "polar-filament_petg_1000.0_1.75", "manufacturer": "Polar Filament", "material": "PETG", "density": 1.27, "weight": 1000.0, "spool_weight": 190.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polar-filament_pla_1000.0_1.75", "manufacturer": "Polar Filament", "material": "PLA", "density": 1.24, "weight": 1000.0, "spool_weight": 190.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_abs_1000.0_1.75", "manufacturer": "Polymaker", "material": "ABS", "density": 1.12, "weight": 1000.0, "spool_weight": 140.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_abs_1000.0_2.85", "manufacturer": "Polymaker", "material": "ABS", "density": 1.12, "weight": 1000.0, "spool_weight": 140.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_abs_3000.0_1.75", "manufacturer": "Polymaker", "material": "ABS", "density": 1.12, "weight": 3000.0, "spool_weight": 425.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_abs_3000.0_2.85", "manufacturer": "Polymaker", "material": "ABS", "density": 1.12, "weight": 3000.0, "spool_weight": 425.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_abs_5000.0_1.75", "manufacturer": "Polymaker", "material": "ABS", "density": 1.12, "weight": 5000.0, "spool_weight": 819.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_abs_5000.0_2.85", "manufacturer": "Polymaker", "material": "ABS", "density": 1.12, "weight": 5000.0, "spool_weight": 819.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_asa_1000.0_1.75", "manufacturer": "Polymaker", "material": "ASA", "density": 1.13, "weight": 1000.0, "spool_weight": 140.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_asa_1000.0_2.85", "manufacturer": "Polymaker", "material": "ASA", "density": 1.13, "weight": 1000.0, "spool_weight": 140.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_asa_3000.0_1.75", "manufacturer": "Polymaker", "material": "ASA", "density": 1.13, "weight": 3000.0, "spool_weight": 425.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_asa_3000.0_2.85", "manufacturer": "Polymaker", "material": "ASA", "density": 1.13, "weight": 3000.0, "spool_weight": 425.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_asa_5000.0_1.75", "manufacturer": "Polymaker", "material": "ASA", "density": 1.13, "weight": 5000.0, "spool_weight": 819.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_asa_5000.0_2.85", "manufacturer": "Polymaker", "material": "ASA", "density": 1.13, "weight": 5000.0, "spool_weight": 819.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_pa_500.0_1.75", "manufacturer": "Polymaker", "material": "PA", "density": 1.06, "weight": 500.0, "spool_weight": 190.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_pa_2000.0_1.75", "manufacturer": "Polymaker", "material": "PA", "density": 1.17, "weight": 2000.0, "spool_weight": 370.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_pa_750.0_1.75", "manufacturer": "Polymaker", "material": "PA", "density": 1.12, "weight": 750.0, "spool_weight": 125.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_pa_750.0_2.85", "manufacturer": "Polymaker", "material": "PA", "density": 1.12, "weight": 750.0, "spool_weight": 125.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_pc_1000.0_1.75", "manufacturer": "Polymaker", "material": "PC", "density": 1.19, "weight": 1000.0, "spool_weight": 140.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_pc_1000.0_2.85", "manufacturer": "Polymaker", "material": "PC", "density": 1.19, "weight": 1000.0, "spool_weight": 140.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_pc_3000.0_1.75", "manufacturer": "Polymaker", "material": "PC", "density": 1.19, "weight": 3000.0, "spool_weight": 425.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_pc_3000.0_2.85", "manufacturer": "Polymaker", "material": "PC", "density": 1.19, "weight": 3000.0, "spool_weight": 425.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_pc_750.0_1.75", "manufacturer": "Polymaker", "material": "PC", "density": 1.19, "weight": 750.0, "spool_weight": 125.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_pc_750.0_2.85", "manufacturer": "Polymaker", "material": "PC", "density": 1.19, "weight": 750.0, "spool_weight": 125.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_petg_1000.0_1.75", "manufacturer": "Polymaker", "material": "PETG", "density": 1.25, "weight": 1000.0, "spool_weight": 140.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_petg_1000.0_2.85", "manufacturer": "Polymaker", "material": "PETG", "density": 1.25, "weight": 1000.0, "spool_weight": 140.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_petg_3000.0_1.75", "manufacturer": "Polymaker", "material": "PETG", "density": 1.25, "weight": 3000.0, "spool_weight": 425.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_petg_3000.0_2.85", "manufacturer": "Polymaker", "material": "PETG", "density": 1.25, "weight": 3000.0, "spool_weight": 425.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_petg_5000.0_1.75", "manufacturer": "Polymaker", "material": "PETG", "density": 1.25, "weight": 5000.0, "spool_weight": 819.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_petg_5000.0_2.85", "manufacturer": "Polymaker", "material": "PETG", "density": 1.25, "weight": 5000.0, "spool_weight": 819.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_petg_750.0_1.75", "manufacturer": "Polymaker", "material": "PETG", "density": 1.24, "weight": 750.0, "spool_weight": 125.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_petg_750.0_2.85", "manufacturer": "Polymaker", "material": "PETG", "density": 1.24, "weight": 750.0, "spool_weight": 125.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_pla_1000_1.75", "manufacturer": "Polymaker", "material": "PLA", "density": 1.24, "weight": 1000, "spool_weight": 140, "spool_type": null, "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_pla_1000.0_1.75", "manufacturer": "Polymaker", "material": "PLA", "density": 1.37, "weight": 1000.0, "spool_weight": 140.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_pla_1000_2.85", "manufacturer": "Polymaker", "material": "PLA", "density": 1.24, "weight": 1000, "spool_weight": 140, "spool_type": null, "diameter": 2.85, "bed_temp": 50}
+{"id": "polymaker_pla_3000_1.75", "manufacturer": "Polymaker", "material": "PLA", "density": 1.24, "weight": 3000, "spool_weight": 425, "spool_type": null, "diameter": 1.75, "bed_temp": 50}
+{"id": "polymaker_pla_3000_2.85", "manufacturer": "Polymaker", "material": "PLA", "density": 1.24, "weight": 3000, "spool_weight": 425, "spool_type": null, "diameter": 2.85, "bed_temp": 50}
+{"id": "polymaker_pla_3000.0_1.75", "manufacturer": "Polymaker", "material": "PLA", "density": 1.19, "weight": 3000.0, "spool_weight": 425.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_pla_5000.0_1.75", "manufacturer": "Polymaker", "material": "PLA", "density": 1.19, "weight": 5000.0, "spool_weight": 819.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_pla_1000.0_2.85", "manufacturer": "Polymaker", "material": "PLA", "density": 1.17, "weight": 1000.0, "spool_weight": 140.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_pla_3000.0_2.85", "manufacturer": "Polymaker", "material": "PLA", "density": 1.17, "weight": 3000.0, "spool_weight": 425.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_pla_5000.0_2.85", "manufacturer": "Polymaker", "material": "PLA", "density": 1.17, "weight": 5000.0, "spool_weight": 819.0, "spool_type": "plastic", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_pla_800.0_1.75", "manufacturer": "Polymaker", "material": "PLA", "density": 0.8, "weight": 800.0, "spool_weight": 200.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_pla_750.0_1.75", "manufacturer": "Polymaker", "material": "PLA", "density": 1.21, "weight": 750.0, "spool_weight": 125.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_pla_750.0_2.85", "manufacturer": "Polymaker", "material": "PLA", "density": 1.21, "weight": 750.0, "spool_weight": 125.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_pla_600.0_1.75", "manufacturer": "Polymaker", "material": "PLA", "density": 0.8, "weight": 600.0, "spool_weight": 125.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_pla_600.0_2.85", "manufacturer": "Polymaker", "material": "PLA", "density": 0.8, "weight": 600.0, "spool_weight": 125.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_pva_750.0_1.75", "manufacturer": "Polymaker", "material": "PVA", "density": 1.13, "weight": 750.0, "spool_weight": 125.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_pva_750.0_2.85", "manufacturer": "Polymaker", "material": "PVA", "density": 1.13, "weight": 750.0, "spool_weight": 125.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_pvb_750.0_1.75", "manufacturer": "Polymaker", "material": "PVB", "density": 1.1, "weight": 750.0, "spool_weight": 125.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_pvb_750.0_2.85", "manufacturer": "Polymaker", "material": "PVB", "density": 1.1, "weight": 750.0, "spool_weight": 125.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_pvb_3000.0_1.75", "manufacturer": "Polymaker", "material": "PVB", "density": 1.1, "weight": 3000.0, "spool_weight": 425.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_pvb_3000.0_2.85", "manufacturer": "Polymaker", "material": "PVB", "density": 1.1, "weight": 3000.0, "spool_weight": 425.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_tpu_750.0_1.75", "manufacturer": "Polymaker", "material": "TPU", "density": 1.12, "weight": 750.0, "spool_weight": 125.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_tpu_750.0_2.85", "manufacturer": "Polymaker", "material": "TPU", "density": 1.12, "weight": 750.0, "spool_weight": 125.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "polymaker_tpu_1000.0_1.75", "manufacturer": "Polymaker", "material": "TPU", "density": 1.16, "weight": 1000.0, "spool_weight": 140.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": null}
+{"id": "polymaker_tpu_1000.0_2.85", "manufacturer": "Polymaker", "material": "TPU", "density": 1.16, "weight": 1000.0, "spool_weight": 140.0, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": null}
+{"id": "printy-please_abs_1000_1.75", "manufacturer": "Printy Please", "material": "ABS", "density": 1.09, "weight": 1000, "spool_weight": 190, "spool_type": null, "diameter": 1.75, "bed_temp": 105}
+{"id": "protopasta_petg_500_1.75", "manufacturer": "Protopasta", "material": "PETG", "density": 1.2, "weight": 500, "spool_weight": 75, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 70}
+{"id": "protopasta_petg_1000_1.75", "manufacturer": "Protopasta", "material": "PETG", "density": 1.2, "weight": 1000, "spool_weight": 75, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 70}
+{"id": "protopasta_petg_3000_1.75", "manufacturer": "Protopasta", "material": "PETG", "density": 1.2, "weight": 3000, "spool_weight": 75, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 70}
+{"id": "protopasta_pla_500_1.75", "manufacturer": "Protopasta", "material": "PLA", "density": 1.24, "weight": 500, "spool_weight": 75, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 60}
+{"id": "protopasta_pla_1000_1.75", "manufacturer": "Protopasta", "material": "PLA", "density": 1.24, "weight": 1000, "spool_weight": 75, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 60}
+{"id": "protopasta_pla_3000_1.75", "manufacturer": "Protopasta", "material": "PLA", "density": 1.24, "weight": 3000, "spool_weight": 75, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 60}
+{"id": "protopasta_pla_500_2.85", "manufacturer": "Protopasta", "material": "PLA", "density": 1.15, "weight": 500, "spool_weight": 75, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": 60}
+{"id": "protopasta_pla_3000_2.85", "manufacturer": "Protopasta", "material": "PLA", "density": 1.15, "weight": 3000, "spool_weight": 75, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": 60}
+{"id": "protopasta_pla_100_1.75", "manufacturer": "Protopasta", "material": "PLA", "density": 2.3, "weight": 100, "spool_weight": 75, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 60}
+{"id": "protopasta_pla_1500_1.75", "manufacturer": "Protopasta", "material": "PLA", "density": 2.3, "weight": 1500, "spool_weight": 75, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 60}
+{"id": "protopasta_pla_2000_1.75", "manufacturer": "Protopasta", "material": "PLA", "density": 1.24, "weight": 2000, "spool_weight": 75, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 60}
+{"id": "protopasta_pla_2000_2.85", "manufacturer": "Protopasta", "material": "PLA", "density": 1.24, "weight": 2000, "spool_weight": 75, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": 60}
+{"id": "protopasta_pla_1000_2.85", "manufacturer": "Protopasta", "material": "PLA", "density": 1.2, "weight": 1000, "spool_weight": 75, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": 60}
+{"id": "protopasta_tpe_500_1.75", "manufacturer": "Protopasta", "material": "TPE", "density": 1.24, "weight": 500, "spool_weight": 75, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 60}
+{"id": "protopasta_tpe_1000_1.75", "manufacturer": "Protopasta", "material": "TPE", "density": 1.24, "weight": 1000, "spool_weight": 75, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 60}
+{"id": "prusament_asa_800.0_1.75", "manufacturer": "Prusament", "material": "ASA", "density": 1.07, "weight": 800.0, "spool_weight": 193.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "prusament_pc_1000.0_1.75", "manufacturer": "Prusament", "material": "PC", "density": 1.22, "weight": 1000.0, "spool_weight": 186.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "prusament_pc-cf_800.0_1.75", "manufacturer": "Prusament", "material": "PC-CF", "density": 1.22, "weight": 800.0, "spool_weight": 200.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "prusament_petg_1000.0_1.75", "manufacturer": "Prusament", "material": "PETG", "density": 1.27, "weight": 1000.0, "spool_weight": 193.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "prusament_petg_2000.0_1.75", "manufacturer": "Prusament", "material": "PETG", "density": 1.27, "weight": 2000.0, "spool_weight": 219.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "prusament_pla_1000.0_1.75", "manufacturer": "Prusament", "material": "PLA", "density": 1.24, "weight": 1000.0, "spool_weight": 193.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 50}
+{"id": "prusament_pla_2000.0_1.75", "manufacturer": "Prusament", "material": "PLA", "density": 1.24, "weight": 2000.0, "spool_weight": 219.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 50}
+{"id": "prusament_pvb_1000.0_1.75", "manufacturer": "Prusament", "material": "PVB", "density": 1.1, "weight": 1000.0, "spool_weight": 193.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 75}
+{"id": "prusament_tpu-95a_500.0_1.75", "manufacturer": "Prusament", "material": "TPU-95A", "density": 1.25, "weight": 500.0, "spool_weight": 220.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 65}
+{"id": "qidi-tech_asa_1000.0_1.75", "manufacturer": "QIDI Tech", "material": "ASA", "density": 1.07, "weight": 1000.0, "spool_weight": 245.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": null}
+{"id": "qidi-tech_pa12-cf_1000.0_1.75", "manufacturer": "QIDI Tech", "material": "PA12-CF", "density": 1.09, "weight": 1000.0, "spool_weight": 245.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": null}
+{"id": "qidi-tech_paht-cf_1000.0_1.75", "manufacturer": "QIDI Tech", "material": "PAHT-CF", "density": 1.2, "weight": 1000.0, "spool_weight": 245.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": null}
+{"id": "qidi-tech_petg_1000.0_1.75", "manufacturer": "QIDI Tech", "material": "PETG", "density": 1.24, "weight": 1000.0, "spool_weight": 245.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": null}
+{"id": "qidi-tech_pps-cf_750.0_1.75", "manufacturer": "QIDI Tech", "material": "PPS-CF", "density": 1.3, "weight": 750.0, "spool_weight": 245.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 100}
+{"id": "r3d_petg_1000.0_1.75", "manufacturer": "R3D", "material": "PETG", "density": 1.27, "weight": 1000.0, "spool_weight": 127.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 75}
+{"id": "r3d_petg_3000.0_1.75", "manufacturer": "R3D", "material": "PETG", "density": 1.27, "weight": 3000.0, "spool_weight": 320.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 75}
+{"id": "r3d_pla_1000.0_1.75", "manufacturer": "R3D", "material": "PLA", "density": 1.27, "weight": 1000.0, "spool_weight": 127.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 50}
+{"id": "ratrig_abs_1000.0_1.75", "manufacturer": "RatRig", "material": "ABS", "density": 1.04, "weight": 1000.0, "spool_weight": 219.2, "spool_type": null, "diameter": 1.75, "bed_temp": 105}
+{"id": "ratrig_asa_1000.0_1.75", "manufacturer": "RatRig", "material": "ASA", "density": 1.05, "weight": 1000.0, "spool_weight": 219.2, "spool_type": null, "diameter": 1.75, "bed_temp": 105}
+{"id": "ratrig_petg_1000.0_1.75", "manufacturer": "RatRig", "material": "PETG", "density": 1.27, "weight": 1000.0, "spool_weight": 219.2, "spool_type": null, "diameter": 1.75, "bed_temp": 80}
+{"id": "ratrig_petg-cf10_1000.0_1.75", "manufacturer": "RatRig", "material": "PETG-CF10", "density": 1.29, "weight": 1000.0, "spool_weight": 219.2, "spool_type": null, "diameter": 1.75, "bed_temp": 80}
+{"id": "rosa3d_abs_1000_1.75", "manufacturer": "Rosa3D", "material": "ABS", "density": 1.05, "weight": 1000, "spool_weight": 250, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 100}
+{"id": "rosa3d_abs_2500_1.75", "manufacturer": "Rosa3D", "material": "ABS", "density": 1.05, "weight": 2500, "spool_weight": 700, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 100}
+{"id": "rosa3d_asa_1000_1.75", "manufacturer": "Rosa3D", "material": "ASA", "density": 1.07, "weight": 1000, "spool_weight": 250, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "rosa3d_pla_1000_1.75", "manufacturer": "Rosa3D", "material": "PLA", "density": 1.24, "weight": 1000, "spool_weight": 250, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 55}
+{"id": "siddament_abs_1000.0_1.75", "manufacturer": "Siddament", "material": "ABS", "density": 1.05, "weight": 1000.0, "spool_weight": 160, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "soleyin_pla_1000_1.75", "manufacturer": "Soleyin", "material": "PLA", "density": 1.25, "weight": 1000, "spool_weight": 290, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 50}
+{"id": "spectrum_asa-cf_1000.0_1.75", "manufacturer": "Spectrum", "material": "ASA-CF", "density": 1.12, "weight": 1000.0, "spool_weight": 206.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": null}
+{"id": "spectrum_pctg_1000.0_1.75", "manufacturer": "Spectrum", "material": "PCTG", "density": 1.27, "weight": 1000.0, "spool_weight": 245.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": null}
+{"id": "sunlu_abs_1000_1.75", "manufacturer": "Sunlu", "material": "ABS", "density": 1.04, "weight": 1000, "spool_weight": 130, "spool_type": null, "diameter": 1.75, "bed_temp": 105}
+{"id": "sunlu_petg_1000.0_1.75", "manufacturer": "Sunlu", "material": "PETG", "density": 1.23, "weight": 1000.0, "spool_weight": 130.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 80}
+{"id": "sunlu_petg_1000_1.75", "manufacturer": "Sunlu", "material": "PETG", "density": 1.26, "weight": 1000, "spool_weight": 168, "spool_type": "plastic", "diameter": 1.75, "bed_temp": null}
+{"id": "sunlu_pla_1000.0_1.75", "manufacturer": "Sunlu", "material": "PLA", "density": 1.23, "weight": 1000.0, "spool_weight": 162.0, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "sunlu_pla+_1000.0_1.75", "manufacturer": "Sunlu", "material": "PLA+", "density": 1.24, "weight": 1000.0, "spool_weight": 130, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "sunlu_tpu_1000.0_1.75", "manufacturer": "Sunlu", "material": "TPU", "density": 1.24, "weight": 1000.0, "spool_weight": 130, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 0}
+{"id": "sunlu_wood_1000.0_1.75", "manufacturer": "Sunlu", "material": "WOOD", "density": 1.25, "weight": 1000.0, "spool_weight": 130, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "tinmorry_pla_1000.0_1.75", "manufacturer": "Tinmorry", "material": "PLA", "density": 1.24, "weight": 1000.0, "spool_weight": 160, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 60}
+{"id": "voxelpla_petg_1000.0_1.75", "manufacturer": "VOXELPLA", "material": "PETG", "density": 1.27, "weight": 1000.0, "spool_weight": 217, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 80}
+{"id": "voxelpla_pla_1000_1.75", "manufacturer": "VOXELPLA", "material": "PLA", "density": 1.24, "weight": 1000, "spool_weight": 217, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "voolt3d_pla_1000.0_1.75", "manufacturer": "Voolt3D", "material": "PLA", "density": 1.24, "weight": 1000.0, "spool_weight": 187, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 70}
+{"id": "add:north_abs_750_1.75", "manufacturer": "add:north", "material": "ABS", "density": 1.04, "weight": 750, "spool_weight": 207, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 105}
+{"id": "add:north_pa_750_1.75", "manufacturer": "add:north", "material": "PA", "density": 1.33, "weight": 750, "spool_weight": 207, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "add:north_pa_1000_1.75", "manufacturer": "add:north", "material": "PA", "density": 1.18, "weight": 1000, "spool_weight": 238, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 90}
+{"id": "add:north_pa_500_1.75", "manufacturer": "add:north", "material": "PA", "density": 1.1, "weight": 500, "spool_weight": 175, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 50}
+{"id": "add:north_pa-cf_500_1.75", "manufacturer": "add:north", "material": "PA-CF", "density": 1.2, "weight": 500, "spool_weight": 175, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "add:north_pa-cf_1000_1.75", "manufacturer": "add:north", "material": "PA-CF", "density": 1.2, "weight": 1000, "spool_weight": 238, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "add:north_pc_500_1.75", "manufacturer": "add:north", "material": "PC", "density": 1.3, "weight": 500, "spool_weight": 175, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "add:north_pc_1000_1.75", "manufacturer": "add:north", "material": "PC", "density": 1.3, "weight": 1000, "spool_weight": 238, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 110}
+{"id": "add:north_petg_750_1.75", "manufacturer": "add:north", "material": "PETG", "density": 1.3, "weight": 750, "spool_weight": 207, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 80}
+{"id": "add:north_petg_2300_1.75", "manufacturer": "add:north", "material": "PETG", "density": 1.27, "weight": 2300, "spool_weight": 600, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 70}
+{"id": "add:north_petg_5000_1.75", "manufacturer": "add:north", "material": "PETG", "density": 1.27, "weight": 5000, "spool_weight": 780, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 70}
+{"id": "add:north_petg_1000_1.75", "manufacturer": "add:north", "material": "PETG", "density": 1.24, "weight": 1000, "spool_weight": 238, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 70}
+{"id": "add:north_petg-cf_500_1.75", "manufacturer": "add:north", "material": "PETG-CF", "density": 1.3, "weight": 500, "spool_weight": 175, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 70}
+{"id": "add:north_petg-cf_1000_1.75", "manufacturer": "add:north", "material": "PETG-CF", "density": 1.3, "weight": 1000, "spool_weight": 238, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 70}
+{"id": "add:north_pla_750_1.75", "manufacturer": "add:north", "material": "PLA", "density": 1.24, "weight": 750, "spool_weight": 207, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "add:north_pla_2300_1.75", "manufacturer": "add:north", "material": "PLA", "density": 1.24, "weight": 2300, "spool_weight": 600, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "add:north_pla_1000_1.75", "manufacturer": "add:north", "material": "PLA", "density": 1.24, "weight": 1000, "spool_weight": 238, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "add:north_pla_5000_1.75", "manufacturer": "add:north", "material": "PLA", "density": 1.26, "weight": 5000, "spool_weight": 780, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "add:north_pla+wood_500_1.75", "manufacturer": "add:north", "material": "PLA+WOOD", "density": 1.15, "weight": 500, "spool_weight": 175, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "add:north_pla+wood_1000_1.75", "manufacturer": "add:north", "material": "PLA+WOOD", "density": 1.15, "weight": 1000, "spool_weight": 238, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "add:north_pla-cf_1000_1.75", "manufacturer": "add:north", "material": "PLA-CF", "density": 1.25, "weight": 1000, "spool_weight": 238, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "add:north_pvdf_1000_1.75", "manufacturer": "add:north", "material": "PVDF", "density": 1.3, "weight": 1000, "spool_weight": 238, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 55}
+{"id": "add:north_pvdf+graphene_100_1.75", "manufacturer": "add:north", "material": "PVDF+GRAPHENE", "density": 1.76, "weight": 100, "spool_weight": null, "spool_type": null, "diameter": 1.75, "bed_temp": 60}
+{"id": "add:north_pvdf+graphene_250_1.75", "manufacturer": "add:north", "material": "PVDF+GRAPHENE", "density": 1.76, "weight": 250, "spool_weight": null, "spool_type": null, "diameter": 1.75, "bed_temp": 60}
+{"id": "add:north_tpu-85a_1000_1.75", "manufacturer": "add:north", "material": "TPU-85A", "density": 1.1, "weight": 1000, "spool_weight": 238, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "add:north_tpu-85a_500_1.75", "manufacturer": "add:north", "material": "TPU-85A", "density": 1.1, "weight": 500, "spool_weight": 175, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "add:north_tpu-95a_500_1.75", "manufacturer": "add:north", "material": "TPU-95A", "density": 1.21, "weight": 500, "spool_weight": 175, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "add:north_tpu-95a_1000_1.75", "manufacturer": "add:north", "material": "TPU-95A", "density": 1.1, "weight": 1000, "spool_weight": 238, "spool_type": "plastic", "diameter": 1.75, "bed_temp": 60}
+{"id": "esun_abs+_1000_1.75", "manufacturer": "eSun", "material": "ABS+", "density": 1.06, "weight": 1000, "spool_weight": 240, "spool_type": null, "diameter": 1.75, "bed_temp": 100}
+{"id": "esun_hips_1000_1.75", "manufacturer": "eSun", "material": "HIPS", "density": 1.05, "weight": 1000, "spool_weight": 240, "spool_type": null, "diameter": 1.75, "bed_temp": null}
+{"id": "esun_petg_1000_1.75", "manufacturer": "eSun", "material": "PETG", "density": 1.27, "weight": 1000, "spool_weight": 240, "spool_type": null, "diameter": 1.75, "bed_temp": 80}
+{"id": "esun_petg_1000_2.85", "manufacturer": "eSun", "material": "PETG", "density": 1.27, "weight": 1000, "spool_weight": 240, "spool_type": null, "diameter": 2.85, "bed_temp": 80}
+{"id": "esun_pla_1000_1.75", "manufacturer": "eSun", "material": "PLA", "density": 1.1, "weight": 1000, "spool_weight": 170, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 60}
+{"id": "esun_pla+_1000_1.75", "manufacturer": "eSun", "material": "PLA+", "density": 1.23, "weight": 1000, "spool_weight": 170, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 60}
+{"id": "esun_pla+_1000_2.85", "manufacturer": "eSun", "material": "PLA+", "density": 1.23, "weight": 1000, "spool_weight": 170, "spool_type": "cardboard", "diameter": 2.85, "bed_temp": 60}
+{"id": "esun_tpu-95a_1000_1.75", "manufacturer": "eSun", "material": "TPU-95A", "density": 1.21, "weight": 1000, "spool_weight": 240, "spool_type": null, "diameter": 1.75, "bed_temp": 60}
+{"id": "gembird_abs_1000.0_1.75", "manufacturer": "gembird", "material": "ABS", "density": 1.01, "weight": 1000.0, "spool_weight": 200.0, "spool_type": "cardboard", "diameter": 1.75, "bed_temp": 80}
