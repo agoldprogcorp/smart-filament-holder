@@ -1345,6 +1345,34 @@ bool isNtagCard() {
   return (piccType == MFRC522::PICC_TYPE_MIFARE_UL);  // NTAG определяется как Ultralight
 }
 
+// Общая функция парсинга NDEF payload из буфера
+String parseNdefPayload(byte* buffer, byte bufferSize) {
+  String data = "";
+  
+  // Проверяем NDEF формат (TLV: 03 = NDEF Message, D1 = Record Header, 54 = Type 'T')
+  if (buffer[0] == 0x03 && buffer[2] == 0xD1 && buffer[5] == 0x54) {
+    // NDEF Text Record формат
+    byte langLength = buffer[6] & 0x3F;  // Длина языкового кода
+    byte payloadStart = 7 + langLength;  // Начало текстовых данных
+    
+    // Извлекаем текст до конца буфера или терминатора
+    for (byte i = payloadStart; i < bufferSize && buffer[i] != 0x00 && buffer[i] != 0xFE; i++) {
+      if (buffer[i] >= 32 && buffer[i] <= 126) {  // Только печатные ASCII символы
+        data += (char)buffer[i];
+      }
+    }
+  } else {
+    // Raw формат - просто читаем текст
+    for (byte i = 0; i < bufferSize && buffer[i] != 0x00; i++) {
+      if (buffer[i] >= 32 && buffer[i] <= 126) {
+        data += (char)buffer[i];
+      }
+    }
+  }
+  
+  return data;
+}
+
 // Чтение данных с NTAG (Type 2 Tag)
 String readNtagData() {
   // NTAG не требует аутентификации для чтения
@@ -1360,41 +1388,19 @@ String readNtagData() {
     return "";
   }
 
-  // Ищем NDEF Text Record
-  String data = "";
+  // Парсим первый блок
+  String data = parseNdefPayload(buffer, 16);
 
-  // NDEF на NTAG: страница 4 содержит CC (Capability Container)
-  // Данные обычно начинаются со страницы 5+
-  // Проверяем NDEF TLV (03 = NDEF Message)
-  if (buffer[0] == 0x03 && buffer[2] == 0xD1 && buffer[5] == 0x54) {
-    // NDEF формат
-    byte langLength = buffer[6] & 0x3F;
-    byte payloadStart = 7 + langLength;
-
-    for (byte i = payloadStart; i < 16 && buffer[i] != 0x00 && buffer[i] != 0xFE; i++) {
-      if (buffer[i] >= 32 && buffer[i] <= 126) {
-        data += (char)buffer[i];
-      }
-    }
-
-    // Читаем следующие страницы если нужно
-    if (data.length() < 10) {
-      byte buffer2[18];
-      byte size2 = sizeof(buffer2);
-      status = rfid.MIFARE_Read(8, buffer2, &size2);  // Страницы 8-11
-      if (status == MFRC522::STATUS_OK) {
-        for (byte i = 0; i < 16 && buffer2[i] != 0x00 && buffer2[i] != 0xFE; i++) {
-          if (buffer2[i] >= 32 && buffer2[i] <= 126) {
-            data += (char)buffer2[i];
-          }
+  // Читаем следующие страницы если данных мало
+  if (data.length() < 10) {
+    byte buffer2[18];
+    byte size2 = sizeof(buffer2);
+    status = rfid.MIFARE_Read(8, buffer2, &size2);  // Страницы 8-11
+    if (status == MFRC522::STATUS_OK) {
+      for (byte i = 0; i < 16 && buffer2[i] != 0x00 && buffer2[i] != 0xFE; i++) {
+        if (buffer2[i] >= 32 && buffer2[i] <= 126) {
+          data += (char)buffer2[i];
         }
-      }
-    }
-  } else {
-    // Raw формат - просто читаем текст
-    for (byte i = 0; i < 16 && buffer[i] != 0x00; i++) {
-      if (buffer[i] >= 32 && buffer[i] <= 126) {
-        data += (char)buffer[i];
       }
     }
   }
@@ -1436,35 +1442,19 @@ String readMifareData() {
     return "";
   }
 
-  String data = "";
+  // Парсим первый блок
+  String data = parseNdefPayload(buffer, 16);
 
-  // Проверяем NDEF формат
-  if (buffer[0] == 0x03 && buffer[2] == 0xD1 && buffer[5] == 0x54) {
-    byte langLength = buffer[6] & 0x3F;
-    byte payloadStart = 7 + langLength;
-
-    for (byte i = payloadStart; i < 16 && buffer[i] != 0x00 && buffer[i] != 0xFE; i++) {
-      if (buffer[i] >= 32 && buffer[i] <= 126) {
-        data += (char)buffer[i];
-      }
-    }
-
-    if (data.length() < 10) {
-      byte buffer2[18];
-      byte size2 = sizeof(buffer2);
-      status = rfid.MIFARE_Read(5, buffer2, &size2);
-      if (status == MFRC522::STATUS_OK) {
-        for (byte i = 0; i < 16 && buffer2[i] != 0x00 && buffer2[i] != 0xFE; i++) {
-          if (buffer2[i] >= 32 && buffer2[i] <= 126) {
-            data += (char)buffer2[i];
-          }
+  // Читаем следующий блок если данных мало
+  if (data.length() < 10) {
+    byte buffer2[18];
+    byte size2 = sizeof(buffer2);
+    status = rfid.MIFARE_Read(5, buffer2, &size2);
+    if (status == MFRC522::STATUS_OK) {
+      for (byte i = 0; i < 16 && buffer2[i] != 0x00 && buffer2[i] != 0xFE; i++) {
+        if (buffer2[i] >= 32 && buffer2[i] <= 126) {
+          data += (char)buffer2[i];
         }
-      }
-    }
-  } else {
-    for (byte i = 0; i < 16; i++) {
-      if (buffer[i] >= 32 && buffer[i] <= 126) {
-        data += (char)buffer[i];
       }
     }
   }
@@ -1647,14 +1637,6 @@ void handleData() {
   server.send(200, "application/json", response);
   Serial.println("[HTTP] Данные отправлены плагину");
 }
-      case '\n': output += "\\n"; break;
-      case '\r': output += "\\r"; break;
-      case '\t': output += "\\t"; break;
-      default:   output += c; break;
-    }
-  }
-  return output;
-}
 
 // Отправка данных через BLE
 void sendBLEData() {
@@ -1696,13 +1678,17 @@ void sendBLEData() {
 float calculateLength(float weight_g, float diameter_mm, float density) {
   if (diameter_mm <= 0 || density <= 0 || weight_g <= 0) return 0;
   
-  // Формула: Длина (м) = Вес_г / (Плотность × π × (Диаметр_мм/2)² / 100)
-  float radius_mm = diameter_mm / 2.0;
-  float area_mm2 = 3.14159 * radius_mm * radius_mm;
-  float area_cm2 = area_mm2 / 100.0;
-  float volume_cm3 = weight_g / density;
-  float length_cm = volume_cm3 / area_cm2;
-  float length_m = length_cm / 100.0;
+  // Формула: Длина (м) = Объем / Площадь_сечения
+  // Объем (см³) = Вес (г) / Плотность (г/см³)
+  // Площадь_сечения (см²) = π × (Диаметр/2)²
+  // 1 мм = 0.1 см, поэтому диаметр_см = диаметр_мм / 10
+  
+  float diameter_cm = diameter_mm / 10.0;  // мм -> см
+  float radius_cm = diameter_cm / 2.0;
+  float area_cm2 = 3.14159265359 * radius_cm * radius_cm;  // см²
+  float volume_cm3 = weight_g / density;  // см³
+  float length_cm = volume_cm3 / area_cm2;  // см
+  float length_m = length_cm / 100.0;  // см -> м
   
   return length_m;
 }
@@ -1716,6 +1702,36 @@ void restoreLcdSpi() {
   SPI.setFrequency(40000000);
 }
 
+// Общая функция формирования NDEF Text Record
+// Возвращает размер сформированного сообщения
+int buildNdefMessage(byte* buffer, int bufferSize, const byte* payload, int payloadLen) {
+  if (bufferSize < 10 + payloadLen) return 0;  // Недостаточно места
+  
+  byte payloadLength = 3 + payloadLen;  // lang code (2) + lang length (1) + payload
+  byte messageLength = 5 + payloadLength;  // header (5) + payload
+  
+  memset(buffer, 0, bufferSize);
+  
+  buffer[0] = 0x03;              // NDEF Message TLV
+  buffer[1] = messageLength;     // Длина сообщения
+  buffer[2] = 0xD1;              // Record Header (MB=1, ME=1, SR=1, TNF=0x01)
+  buffer[3] = 0x01;              // Type Length = 1
+  buffer[4] = payloadLength;     // Payload Length
+  buffer[5] = 0x54;              // Type = 'T' (Text)
+  buffer[6] = 0x02;              // Status byte: UTF-8, lang code length = 2
+  buffer[7] = 0x65;              // 'e'
+  buffer[8] = 0x6E;              // 'n'
+  
+  // Копируем payload
+  for (int i = 0; i < payloadLen; i++) {
+    buffer[9 + i] = payload[i];
+  }
+  
+  buffer[9 + payloadLen] = 0xFE;  // NDEF Terminator TLV
+  
+  return 10 + payloadLen;  // Возвращаем общий размер
+}
+
 // Запись на NTAG (страницами по 4 байта)
 bool writeNtagData(String filamentId) {
   Serial.println("[NFC] Запись на NTAG...");
@@ -1725,39 +1741,23 @@ bool writeNtagData(String filamentId) {
   if (idLen > 40) idLen = 40;  // Ограничение для NTAG
   filamentId.getBytes(idBytes, idLen + 1);
 
-  // NDEF формат для NTAG
-  byte payloadLength = 3 + idLen;
-  byte messageLength = 5 + payloadLength;
-
-  // Формируем NDEF сообщение (до 48 байт)
+  // Формируем NDEF сообщение
   byte ndefMsg[48];
-  memset(ndefMsg, 0, 48);
-
-  ndefMsg[0] = 0x03;              // NDEF Message TLV
-  ndefMsg[1] = messageLength;     // Длина
-  ndefMsg[2] = 0xD1;              // Record Header
-  ndefMsg[3] = 0x01;              // Type Length
-  ndefMsg[4] = payloadLength;     // Payload Length
-  ndefMsg[5] = 0x54;              // Type 'T'
-  ndefMsg[6] = 0x02;              // UTF-8, lang=2
-  ndefMsg[7] = 0x65;              // 'e'
-  ndefMsg[8] = 0x6E;              // 'n'
-
-  for (int i = 0; i < idLen; i++) {
-    ndefMsg[9 + i] = idBytes[i];
+  int msgSize = buildNdefMessage(ndefMsg, sizeof(ndefMsg), idBytes, idLen);
+  
+  if (msgSize == 0) {
+    Serial.println("[NFC] NTAG ошибка: слишком длинный ID");
+    return false;
   }
-  ndefMsg[9 + idLen] = 0xFE;      // NDEF Terminator
 
   // NTAG пишется страницами по 4 байта начиная со страницы 4
-  // Используем MIFARE_Ultralight_Write
-  int totalBytes = 10 + idLen;
-  int numPages = (totalBytes + 3) / 4;
+  int numPages = (msgSize + 3) / 4;
 
   for (int page = 0; page < numPages && page < 12; page++) {
     byte pageData[4];
     for (int i = 0; i < 4; i++) {
       int idx = page * 4 + i;
-      pageData[i] = (idx < 48) ? ndefMsg[idx] : 0x00;
+      pageData[i] = (idx < msgSize) ? ndefMsg[idx] : 0x00;
     }
 
     MFRC522::StatusCode status = rfid.MIFARE_Ultralight_Write(4 + page, pageData, 4);
@@ -1794,31 +1794,24 @@ bool writeMifareData(String filamentId) {
     return false;
   }
 
-  byte idBytes[33];  // +1 для null terminator
+  byte idBytes[33];
   int idLen = filamentId.length();
   if (idLen > 32) idLen = 32;
   filamentId.getBytes(idBytes, idLen + 1);
 
-  byte payloadLength = 3 + idLen;
-  byte messageLength = 5 + payloadLength;
-
-  byte buffer1[16];
-  memset(buffer1, 0, 16);
-
-  buffer1[0] = 0x03;
-  buffer1[1] = messageLength;
-  buffer1[2] = 0xD1;
-  buffer1[3] = 0x01;
-  buffer1[4] = payloadLength;
-  buffer1[5] = 0x54;
-  buffer1[6] = 0x02;
-  buffer1[7] = 0x65;
-  buffer1[8] = 0x6E;
-
-  int firstBlockPayload = (idLen > 7) ? 7 : idLen;
-  for (int i = 0; i < firstBlockPayload; i++) {
-    buffer1[9 + i] = idBytes[i];
+  // Формируем NDEF сообщение
+  byte ndefMsg[48];
+  int msgSize = buildNdefMessage(ndefMsg, sizeof(ndefMsg), idBytes, idLen);
+  
+  if (msgSize == 0) {
+    Serial.println("[NFC] MIFARE ошибка: слишком длинный ID");
+    return false;
   }
+
+  // MIFARE пишется блоками по 16 байт
+  // Блок 4 - первые 16 байт
+  byte buffer1[16];
+  memcpy(buffer1, ndefMsg, 16);
 
   status = rfid.MIFARE_Write(4, buffer1, 16);
   if (status != MFRC522::STATUS_OK) {
@@ -1827,29 +1820,19 @@ bool writeMifareData(String filamentId) {
     return false;
   }
 
-  if (idLen > 7) {
+  // Блок 5 - следующие 16 байт (если нужно)
+  if (msgSize > 16) {
     byte buffer2[16];
     memset(buffer2, 0, 16);
-
-    int remainingBytes = idLen - 7;
+    int remainingBytes = msgSize - 16;
     if (remainingBytes > 16) remainingBytes = 16;
-
-    for (int i = 0; i < remainingBytes; i++) {
-      buffer2[i] = idBytes[7 + i];
-    }
-    if (remainingBytes < 16) {
-      buffer2[remainingBytes] = 0xFE;
-    }
+    memcpy(buffer2, ndefMsg + 16, remainingBytes);
 
     status = rfid.MIFARE_Write(5, buffer2, 16);
     if (status != MFRC522::STATUS_OK) {
       Serial.print("[NFC] MIFARE ошибка записи блока 5: ");
       Serial.println(rfid.GetStatusCodeName(status));
-    }
-  } else {
-    if (9 + firstBlockPayload < 16) {
-      buffer1[9 + firstBlockPayload] = 0xFE;
-      rfid.MIFARE_Write(4, buffer1, 16);
+      return false;
     }
   }
 

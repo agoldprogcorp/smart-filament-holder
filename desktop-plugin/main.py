@@ -516,13 +516,16 @@ class FilamentCheckerWidget(QWidget):
         if self.selected_holder and available > 0:
             density = self.selected_holder.density  # г/см³
             diameter = self.selected_holder.diameter  # мм
-            # Формула: объем = вес / плотность, длина = объем / площадь_сечения
-            radius_mm = diameter / 2
-            area_mm2 = 3.14159 * radius_mm * radius_mm  # мм²
-            area_cm2 = area_mm2 / 100  # см² (1 см² = 100 мм²)
+            # Формула: Длина (м) = Объем / Площадь_сечения
+            # Объем (см³) = Вес (г) / Плотность (г/см³)
+            # Площадь_сечения (см²) = π × (Диаметр/2)²
+            # 1 мм = 0.1 см, поэтому диаметр_см = диаметр_мм / 10
+            diameter_cm = diameter / 10.0  # мм -> см
+            radius_cm = diameter_cm / 2.0
+            area_cm2 = 3.14159265359 * radius_cm * radius_cm  # см²
             volume_cm3 = available / density  # см³
             length_cm = volume_cm3 / area_cm2  # см
-            length_m = length_cm / 100  # метры
+            length_m = length_cm / 100.0  # см -> м
             weight_length_text = f"Вес: {available:.1f}г | Длина: ~{length_m:.1f}м"
 
         self.weight_length_label.setText(weight_length_text)

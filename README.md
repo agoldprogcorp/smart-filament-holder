@@ -47,11 +47,11 @@ Upload Speed: 921600
 
 ### Установка
 
-1. Скопировать `config.h.example` → `config.h`
-2. Настроить WiFi credentials и пины
+1. Скопировать `firmware/main/config.h.example` → `firmware/main/config.h`
+2. Настроить WiFi credentials и пины в `config.h`
 3. Установить ESP32FS plugin: https://github.com/lorol/arduino-esp32fs-plugin
-4. Загрузить `data/filaments.json` через Tools → ESP32 Sketch Data Upload → LittleFS
-5. Прошить через Upload
+4. Загрузить `firmware/main/data/filaments.json` через Tools → ESP32 Sketch Data Upload → LittleFS
+5. Прошить `firmware/main/main.ino` через Upload
 
 ### Калибровка HX711
 
@@ -113,7 +113,9 @@ flutter pub get
 flutter build apk --release
 ```
 
-Результат: `build/app/outputs/flutter-apk/app-release.apk` (47.4 MB)
+Результат: `mobile-app/build/app/outputs/flutter-apk/app-release.apk` (47.4 MB)
+
+Или используйте готовый релиз: [FilamentWeight-v1.0.0.apk](../releases/FilamentWeight-v1.0.0.apk)
 
 ### Зависимости
 
@@ -146,7 +148,9 @@ pip install -r requirements.txt
 pyinstaller --onefile --noconsole --icon=filament_checker.ico --name FilamentChecker main.py
 ```
 
-Результат: `dist/FilamentChecker.exe` (39.8 MB)
+Результат: `desktop-plugin/dist/FilamentChecker.exe` (39.8 MB)
+
+Или используйте готовый релиз: [FilamentChecker-v1.0.0.exe](../releases/FilamentChecker-v1.0.0.exe)
 
 ### Принцип работы
 
