@@ -214,23 +214,23 @@ class BluetoothService extends ChangeNotifier {
         final serviceId = service.uuid.toString().toLowerCase();
         debugPrint('[BLE] Service: $serviceId');
         
-        if (serviceId.contains(serviceUuid.toLowerCase().replaceAll('-', ''))) {
+        if (serviceId.replaceAll('-', '').contains(serviceUuid.toLowerCase().replaceAll('-', ''))) {
           debugPrint('[BLE] Found our service!');
           
           for (var char in service.characteristics) {
             final charId = char.uuid.toString().toLowerCase();
             debugPrint('[BLE]   Characteristic: $charId');
             
-            if (charId.contains(dataCharUuid.toLowerCase().replaceAll('-', ''))) {
+            if (charId.replaceAll('-', '').contains(dataCharUuid.toLowerCase().replaceAll('-', ''))) {
               debugPrint('[BLE]   -> DATA characteristic');
               _dataChar = char;
               await char.setNotifyValue(true);
               _dataSubscription = char.onValueReceived.listen(_onDataReceived);
               debugPrint('[BLE]   -> Notify enabled for DATA');
-            } else if (charId.contains(cmdCharUuid.toLowerCase().replaceAll('-', ''))) {
+            } else if (charId.replaceAll('-', '').contains(cmdCharUuid.toLowerCase().replaceAll('-', ''))) {
               debugPrint('[BLE]   -> CMD characteristic');
               _cmdChar = char;
-            } else if (charId.contains(dbSyncCharUuid.toLowerCase().replaceAll('-', ''))) {
+            } else if (charId.replaceAll('-', '').contains(dbSyncCharUuid.toLowerCase().replaceAll('-', ''))) {
               debugPrint('[BLE]   -> DB_SYNC characteristic');
               _dbSyncChar = char;
               await char.setNotifyValue(true);
