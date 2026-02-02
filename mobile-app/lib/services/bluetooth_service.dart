@@ -194,7 +194,21 @@ class BluetoothService extends ChangeNotifier {
     try {
       debugPrint('[BLE] ===== CONNECTING =====');
       debugPrint('[BLE] Device: ${device.platformName} (${device.remoteId})');
-      
+
+      // Очистка предыдущего состояния перед подключением
+      await _dataSubscription?.cancel();
+      _dataSubscription = null;
+      await _dbSyncSubscription?.cancel();
+      _dbSyncSubscription = null;
+      _dataChar = null;
+      _cmdChar = null;
+      _dbSyncChar = null;
+      _dbChunks.clear();
+      _profileListTimeoutTimer?.cancel();
+      _profileListTimeoutTimer = null;
+      _isLoadingProfiles = false;
+      debugPrint('[BLE] Previous state cleared');
+
       await device.connect(timeout: const Duration(seconds: 15));
       _connectedDevice = device;
       debugPrint('[BLE] Connected successfully');

@@ -45,8 +45,11 @@ class _RealtimeScreenState extends State<RealtimeScreen> {
           final percent = (percentValue / 100).clamp(0.0, 1.0);  // Конвертируем в 0-1
 
           // Данные филамента напрямую от ESP32
-          final material = data?.material ?? '?';
-          final manufacturer = data?.manufacturer ?? '?';
+          // Обрабатываем пустые строки как "?"
+          final rawMaterial = data?.material ?? '';
+          final rawManufacturer = data?.manufacturer ?? '';
+          final material = rawMaterial.isNotEmpty && rawMaterial != '?' ? rawMaterial : '?';
+          final manufacturer = rawManufacturer.isNotEmpty && rawManufacturer != '?' ? rawManufacturer : '?';
           final diameter = data?.diameter ?? 1.75;
           final lengthMeters = (data?.length ?? 0).toDouble();  // ESP32 уже отправляет длину в метрах
           final profileLoaded = data?.profileLoaded ?? false;

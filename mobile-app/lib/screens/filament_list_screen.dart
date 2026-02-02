@@ -450,52 +450,70 @@ class _FilamentTileState extends State<_FilamentTile> {
       Navigator.pop(bottomSheetContext);
     }
 
-    // Показываем диалог ожидания
+    // Отправляем команду записи
+    final success = await bt.writeNFC(filament.id);
+
+    if (!success) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ошибка отправки команды'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Показываем диалог ожидания записи
     if (context.mounted) {
       showDialog(
         context: context,
-        barrierDismissible: false,
+        barrierDismissible: true,
         builder: (dialogCtx) => AlertDialog(
+          title: const Text('Запись NFC'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(),
+              const Icon(Icons.nfc, size: 64, color: Colors.blue),
               const SizedBox(height: 16),
-              const Text('Приложите NFC метку к держателю...'),
+              const Text(
+                'Приложите NFC метку к держателю',
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 8),
               Text(
                 '${filament.manufacturer} - ${filament.material}',
                 style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'У вас есть 5 секунд',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              TextButton(
-                onPressed: () {
-                  if (dialogCtx.mounted) Navigator.pop(dialogCtx);
-                },
-                child: const Text('Отмена'),
-              ),
+              const LinearProgressIndicator(),
             ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+              },
+              child: const Text('Закрыть'),
+            ),
+          ],
         ),
       );
     }
 
-    final success = await bt.writeNFC(filament.id);
+    // Даём время на запись (5 секунд)
+    await Future.delayed(const Duration(seconds: 5));
 
-    await Future.delayed(const Duration(seconds: 3));
-
+    // Закрываем диалог и показываем результат
     if (context.mounted) {
-      Navigator.pop(context);
+      Navigator.of(context, rootNavigator: true).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(success ? 'Команда отправлена. Приложите NFC метку.' : 'Ошибка отправки команды'),
-          backgroundColor: success ? Colors.orange : Colors.red,
-          duration: const Duration(seconds: 3),
+        const SnackBar(
+          content: Text('Запись завершена. Проверьте NFC метку.'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
         ),
       );
     }

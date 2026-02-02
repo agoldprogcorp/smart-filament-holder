@@ -313,6 +313,7 @@ void setup() {
     }
     void onDisconnect(BLEServer* pServer) {
       deviceConnected = false;
+      sendingProfilesNow = false;  // Сброс флага при отключении
       Serial.println("\n[BLE] Отключено");
       pServer->startAdvertising();
     }
@@ -577,25 +578,13 @@ void loop() {
     }
   }
   
-  // Отправка списка профилей после подключения BLE (один раз)
-  if (deviceConnected && !profileListSent) {
-    static unsigned long connectTime = 0;
-    if (connectTime == 0) {
-      connectTime = now;
-    }
-    // Ждём 1 секунду после подключения
-    if (now - connectTime > 1000) {
-      Serial.println("[BLE] Отправка списка профилей...");
-      sendProfileList();
-      profileListSent = true;
-      connectTime = 0;
-    }
-  }
-  
-  // Сброс флага при отключении
+  // Сброс флага при отключении (profileListSent используется только для логирования)
   if (!deviceConnected && profileListSent) {
     profileListSent = false;
   }
+
+  // Примечание: Автоматическая отправка профилей убрана.
+  // Мобильное приложение само запрашивает список через get_profile_list команду.
   
   // Обновление веса (каждые WEIGHT_UPDATE_INTERVAL ms)
   if (now - lastWeightUpdate > WEIGHT_UPDATE_INTERVAL) {
@@ -1289,8 +1278,8 @@ void updateWeightSensor() {
 
 // Проверка NFC карты
 void checkNFC() {
-  // Проверяем NFC только в нужных состояниях
-  if (currentState != STATE_WAIT_NFC && currentState != STATE_RUNNING) {
+  // Проверяем NFC только когда пользователь выбрал NFC метод
+  if (currentState != STATE_WAIT_NFC) {
     return;
   }
   
@@ -1849,15 +1838,31 @@ bool writeNfcData(String filamentId) {
   SPI.end();
   SPI.begin(LCD_SCK, RC522_MISO, LCD_MOSI, RC522_CS);
 
-  // Проверяем наличие карты
-  if (!rfid.PICC_IsNewCardPresent()) {
+  // Сбрасываем lastNfcUid чтобы карта могла быть прочитана после записи
+  lastNfcUid = "";
+
+  // Пробуем обнаружить карту - сначала WakeupA (для ранее прочитанных карт), потом IsNewCardPresent
+  byte atqa[2];
+  byte atqaLen = sizeof(atqa);
+  bool cardFound = false;
+
+  // Пробуем разбудить карту в HALT состоянии
+  if (rfid.PICC_WakeupA(atqa, &atqaLen) == MFRC522::STATUS_OK) {
+    cardFound = true;
+    Serial.println("[NFC] Карта разбужена (WakeupA)");
+  } else if (rfid.PICC_IsNewCardPresent()) {
+    cardFound = true;
+    Serial.println("[NFC] Обнаружена новая карта");
+  }
+
+  if (!cardFound) {
     Serial.println("[NFC] Карта не обнаружена");
     restoreLcdSpi();
     return false;
   }
 
   if (!rfid.PICC_ReadCardSerial()) {
-    Serial.println("[NFC] Ошибка чтения карты");
+    Serial.println("[NFC] Ошибка чтения серийного номера");
     restoreLcdSpi();
     return false;
   }
