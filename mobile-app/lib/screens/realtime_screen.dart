@@ -38,27 +38,18 @@ class _RealtimeScreenState extends State<RealtimeScreen> {
           }
 
           final data = bt.holderData;
-          
-          // Получаем профиль филамента
-          final filamentId = data?.currentFilamentId;
-          final currentProfile = filamentId != null 
-            ? bt.profiles.where((p) => p.id == filamentId).firstOrNull
-            : null;
-          
-          final total = currentProfile?.weight ?? 1000.0;
+
+          // Используем данные напрямую от ESP32
           final remaining = data?.netWeight ?? 0;
-          final percent = total > 0 ? (remaining / total).clamp(0.0, 1.0) : 0.0;
-          
-          // Расчет длины филамента
-          // Формула: объем = вес / плотность, длина = объем / площадь_сечения
-          final density = currentProfile?.density ?? 1.24;  // г/см³
-          final diameter = currentProfile?.diameter ?? 1.75;  // мм
-          final radiusMm = diameter / 2;
-          final areaMm2 = 3.14159 * radiusMm * radiusMm;  // мм²
-          final areaCm2 = areaMm2 / 100;  // см² (1 см² = 100 мм²)
-          final volumeCm3 = remaining / density;  // см³
-          final lengthCm = volumeCm3 / areaCm2;  // см
-          final lengthMeters = lengthCm / 100;  // метры
+          final percentValue = data?.percent ?? 0;  // ESP32 уже отправляет процент
+          final percent = (percentValue / 100).clamp(0.0, 1.0);  // Конвертируем в 0-1
+
+          // Данные филамента напрямую от ESP32
+          final material = data?.material ?? '?';
+          final manufacturer = data?.manufacturer ?? '?';
+          final diameter = data?.diameter ?? 1.75;
+          final lengthMeters = (data?.length ?? 0).toDouble();  // ESP32 уже отправляет длину в метрах
+          final profileLoaded = data?.profileLoaded ?? false;
           
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -118,21 +109,21 @@ class _RealtimeScreenState extends State<RealtimeScreen> {
                 ),
                 const SizedBox(height: 20),
                 // Информация о филаменте (компактная)
-                if (currentProfile != null)
+                if (profileLoaded)
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                       child: Column(
                         children: [
-                          _CompactInfoRow('Производитель', currentProfile.manufacturer),
+                          _CompactInfoRow('Производитель', manufacturer),
                           const SizedBox(height: 8),
-                          _CompactInfoRow('Материал', currentProfile.material),
+                          _CompactInfoRow('Материал', material),
                           const SizedBox(height: 8),
-                          _CompactInfoRow('Диаметр', '${currentProfile.diameter} мм'),
+                          _CompactInfoRow('Диаметр', '${diameter.toStringAsFixed(2)} мм'),
                           const SizedBox(height: 8),
                           _CompactInfoRow('Вес', '${remaining.toStringAsFixed(0)} г'),
                           const SizedBox(height: 8),
-                          _CompactInfoRow('Длина', '${lengthMeters.toStringAsFixed(1)} м'),
+                          _CompactInfoRow('Длина', '${lengthMeters.toStringAsFixed(0)} м'),
                         ],
                       ),
                     ),

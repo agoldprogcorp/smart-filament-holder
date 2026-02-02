@@ -99,6 +99,7 @@ String current_material = "PLA";
 String current_manufacturer = "LIDER-3D";
 bool profile_loaded = false;
 bool deviceConnected = false;
+bool sendingProfilesNow = false;  // Защита от конкурентных отправок профилей
 String lastNfcUid = "";
 
 enum UIState {
@@ -550,7 +551,7 @@ void loop() {
   static unsigned long lastTimeUpdate = 0;
   static unsigned long lastBleUpdate = 0;
   static unsigned long lastWifiCheck = 0;
-  static bool profileListSent = false; // Флаг отправки списка профилей
+  static bool profileListSent = false;    // Флаг отправки списка профилей
   
   unsigned long now = millis();
   
@@ -2048,11 +2049,19 @@ void my_touchpad_read(lv_indev_t *indev_drv, lv_indev_data_t *data) {
 
 // Отправка списка всех профилей
 void sendProfileList() {
+  // Защита от конкурентных вызовов
+  if (sendingProfilesNow) {
+    Serial.println("[DB] ПРОПУСК: уже идёт отправка профилей");
+    return;
+  }
+  sendingProfilesNow = true;
+
   Serial.println("[DB] === Начало отправки списка профилей ===");
-  
+
   // Проверка что BLE инициализирован
   if (!pDbSyncChar) {
     Serial.println("[DB] ОШИБКА: pDbSyncChar == NULL, BLE не инициализирован");
+    sendingProfilesNow = false;
     return;
   }
   
@@ -2062,6 +2071,7 @@ void sendProfileList() {
     String response = "{\"cmd\":\"profile_list\",\"profiles\":[],\"error\":\"LittleFS not mounted\"}";
     pDbSyncChar->setValue(response.c_str());
     pDbSyncChar->notify();
+    sendingProfilesNow = false;
     return;
   }
   
@@ -2087,9 +2097,10 @@ void sendProfileList() {
     String response = "{\"cmd\":\"profile_list\",\"profiles\":[],\"error\":\"File not found\"}";
     pDbSyncChar->setValue(response.c_str());
     pDbSyncChar->notify();
+    sendingProfilesNow = false;
     return;
   }
-  
+
   Serial.printf("[DB] Файл открыт, размер: %d байт\n", file.size());
   
   // ОПТИМИЗАЦИЯ: Отправляем только краткую информацию (id, manufacturer, material, weight)
@@ -2142,6 +2153,7 @@ void sendProfileList() {
     pDbSyncChar->setValue(response.c_str());
     pDbSyncChar->notify();
     Serial.println("[DB] === Отправка завершена (пустой список) ===");
+    sendingProfilesNow = false;
     return;
   }
   
@@ -2192,6 +2204,7 @@ void sendProfileList() {
   }
   
   Serial.println("[DB] === Отправка завершена (chunking) ===");
+  sendingProfilesNow = false;
 }
 
 void sendFullProfile(String filamentId) {
