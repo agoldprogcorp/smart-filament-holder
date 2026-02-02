@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../services/bluetooth_service.dart';
 
 class RealtimeScreen extends StatefulWidget {
@@ -10,8 +12,33 @@ class RealtimeScreen extends StatefulWidget {
 }
 
 class _RealtimeScreenState extends State<RealtimeScreen> {
+  late Timer _clockTimer;
+  DateTime _currentTime = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    // Обновляем время каждую секунду
+    _clockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _currentTime = DateTime.now();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _clockTimer.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Время по МСК (UTC+3)
+    final moscowTime = _currentTime.toUtc().add(const Duration(hours: 3));
+    final timeString = DateFormat('HH:mm:ss').format(moscowTime);
+    final dateString = DateFormat('dd.MM.yyyy').format(moscowTime);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Мониторинг'),
@@ -19,19 +46,21 @@ class _RealtimeScreenState extends State<RealtimeScreen> {
       body: Consumer<BluetoothService>(
         builder: (context, bt, _) {
           if (!bt.isConnected) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('Устройство не подключено'),
-                  SizedBox(height: 8),
-                  Text(
+                  const Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text('Устройство не подключено'),
+                  const SizedBox(height: 8),
+                  const Text(
                     'Подключитесь к держателю\nна главном экране',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey),
                   ),
+                  const Spacer(),
+                  _buildTimeDisplay(timeString, dateString),
                 ],
               ),
             );
@@ -40,97 +69,127 @@ class _RealtimeScreenState extends State<RealtimeScreen> {
           final data = bt.holderData;
 
           // Используем данные напрямую от ESP32
-          final remaining = data?.netWeight ?? 0;
-          final percentValue = data?.percent ?? 0;  // ESP32 уже отправляет процент
-          final percent = (percentValue / 100).clamp(0.0, 1.0);  // Конвертируем в 0-1
+          final grossWeight = data?.grossWeight ?? 0;
+          final netWeight = data?.netWeight ?? 0;
+          final percentValue = data?.percent ?? 0;
+          final percent = (percentValue / 100).clamp(0.0, 1.0);
 
-          // Данные филамента напрямую от ESP32
-          // Обрабатываем пустые строки как "?"
+          // Данные филамента - обрабатываем пустые строки
           final rawMaterial = data?.material ?? '';
           final rawManufacturer = data?.manufacturer ?? '';
-          final material = rawMaterial.isNotEmpty && rawMaterial != '?' ? rawMaterial : '?';
-          final manufacturer = rawManufacturer.isNotEmpty && rawManufacturer != '?' ? rawManufacturer : '?';
+          final material = (rawMaterial.isNotEmpty && rawMaterial != '?') ? rawMaterial : '—';
+          final manufacturer = (rawManufacturer.isNotEmpty && rawManufacturer != '?') ? rawManufacturer : '—';
           final diameter = data?.diameter ?? 1.75;
-          final lengthMeters = (data?.length ?? 0).toDouble();  // ESP32 уже отправляет длину в метрах
+          final lengthMeters = (data?.length ?? 0).toDouble();
           final profileLoaded = data?.profileLoaded ?? false;
-          
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                const SizedBox(height: 40), // Отступ сверху
                 // Круговой прогресс-бар с процентом
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Center(
-                      child: SizedBox(
-                        width: 200,
-                        height: 200,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Круговой прогресс
-                            SizedBox(
-                              width: 200,
-                              height: 200,
-                              child: CircularProgressIndicator(
-                                value: percent,
-                                strokeWidth: 16,
-                                backgroundColor: Colors.grey.shade300,
-                                valueColor: AlwaysStoppedAnimation(
-                                  percent > 0.2 ? Colors.green : Colors.orange,
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          width: 160,
+                          height: 160,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              SizedBox(
+                                width: 160,
+                                height: 160,
+                                child: CircularProgressIndicator(
+                                  value: percent,
+                                  strokeWidth: 14,
+                                  backgroundColor: Colors.grey.shade300,
+                                  valueColor: AlwaysStoppedAnimation(
+                                    percent > 0.2 ? Colors.green : Colors.orange,
+                                  ),
                                 ),
                               ),
-                            ),
-                            // Процент в центре
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  '${(percent * 100).toStringAsFixed(0)}%',
-                                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: percent > 0.2 ? Colors.green : Colors.orange,
-                                  ),
+                              Text(
+                                '${(percent * 100).toStringAsFixed(0)}%',
+                                style: TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.bold,
+                                  color: percent > 0.2 ? Colors.green : Colors.orange,
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'осталось',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        Text(
+                          profileLoaded ? 'Филамент загружен' : 'Профиль не загружен',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: profileLoaded ? Colors.green : Colors.grey,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
-                // Информация о филаменте (компактная)
-                if (profileLoaded)
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      child: Column(
-                        children: [
-                          _CompactInfoRow('Производитель', manufacturer),
-                          const SizedBox(height: 8),
-                          _CompactInfoRow('Материал', material),
-                          const SizedBox(height: 8),
-                          _CompactInfoRow('Диаметр', '${diameter.toStringAsFixed(2)} мм'),
-                          const SizedBox(height: 8),
-                          _CompactInfoRow('Вес', '${remaining.toStringAsFixed(0)} г'),
-                          const SizedBox(height: 8),
-                          _CompactInfoRow('Длина', '${lengthMeters.toStringAsFixed(0)} м'),
-                        ],
-                      ),
+                const SizedBox(height: 12),
+
+                // Информация о весе
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Вес',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _InfoRow('Общий вес', '${grossWeight.toStringAsFixed(0)} г'),
+                        const SizedBox(height: 8),
+                        _InfoRow('Вес филамента', '${netWeight.toStringAsFixed(0)} г'),
+                        const SizedBox(height: 8),
+                        _InfoRow('Длина', lengthMeters > 0 ? '${lengthMeters.toStringAsFixed(0)} м' : '— м'),
+                      ],
                     ),
                   ),
+                ),
+                const SizedBox(height: 12),
+
+                // Информация о филаменте
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Филамент',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _InfoRow('Производитель', manufacturer),
+                        const SizedBox(height: 8),
+                        _InfoRow('Материал', material),
+                        const SizedBox(height: 8),
+                        _InfoRow('Диаметр', '${diameter.toStringAsFixed(2)} мм'),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Время
+                _buildTimeDisplay(timeString, dateString),
                 const SizedBox(height: 16),
               ],
             ),
@@ -139,27 +198,59 @@ class _RealtimeScreenState extends State<RealtimeScreen> {
       ),
     );
   }
+
+  Widget _buildTimeDisplay(String time, String date) {
+    return Card(
+      color: Colors.grey.shade100,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        child: Column(
+          children: [
+            Text(
+              time,
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'monospace',
+              ),
+            ),
+            Text(
+              '$date (МСК)',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _CompactInfoRow extends StatelessWidget {
+class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _CompactInfoRow(this.label, this.value);
+  const _InfoRow(this.label, this.value);
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          '$label:',
-          style: const TextStyle(fontSize: 15, color: Colors.grey),
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade600,
+          ),
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],

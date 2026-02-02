@@ -287,7 +287,11 @@ void setup() {
     Serial.printf("✓ IP: %s\n", WiFi.localIP().toString().c_str());
     Serial.printf("[WiFi] MAC: %s\n", WiFi.macAddress().c_str());
     Serial.printf("[WiFi] RSSI: %d dBm\n", WiFi.RSSI());
-    
+
+    // Настройка NTP для московского времени (UTC+3)
+    configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+    Serial.println("[NTP] Синхронизация времени (МСК, UTC+3)");
+
     // HTTP Server
     server.on("/data", handleData);
     server.on("/status", handleStatus);
@@ -906,46 +910,38 @@ void create_all_screens() {
   
   // МАТЕРИАЛ (большими буквами сверху, по центру)
   label_material = lv_label_create(screen_running);
-  lv_label_set_text(label_material, profile_loaded ? current_material.c_str() : "?");
+  lv_label_set_text(label_material, current_material.c_str());
   lv_obj_set_style_text_font(label_material, &lv_font_montserrat_24, 0);
   lv_obj_set_style_text_color(label_material, lv_color_white(), 0);
   lv_obj_align(label_material, LV_ALIGN_CENTER, 0, -70);
-  
+
   // ПРОИЗВОДИТЕЛЬ (чуть ниже, по центру)
   label_manufacturer = lv_label_create(screen_running);
-  lv_label_set_text(label_manufacturer, profile_loaded ? current_manufacturer.c_str() : "?");
+  lv_label_set_text(label_manufacturer, current_manufacturer.c_str());
   lv_obj_set_style_text_font(label_manufacturer, &lv_font_montserrat_14, 0);
   lv_obj_set_style_text_color(label_manufacturer, lv_color_hex(0x808080), 0);
   lv_obj_align(label_manufacturer, LV_ALIGN_CENTER, 0, -48);
-  
+
   // ПРОЦЕНТ - основная цифра (большая, левее)
   label_percent_main = lv_label_create(screen_running);
   char buf[16];
-  if (profile_loaded) {
-    snprintf(buf, sizeof(buf), "%d", (int)current_percent);
-  } else {
-    snprintf(buf, sizeof(buf), "?");
-  }
+  snprintf(buf, sizeof(buf), "%d", (int)current_percent);
   lv_label_set_text(label_percent_main, buf);
   lv_obj_set_style_text_font(label_percent_main, &lv_font_montserrat_48, 0);
   lv_obj_set_style_text_color(label_percent_main, lv_color_white(), 0);
   lv_obj_align(label_percent_main, LV_ALIGN_CENTER, -60, -5);
-  
+
   // ПРОЦЕНТ - знак % (ближе к цифре, желтый, левее)
   label_percent_sign = lv_label_create(screen_running);
   lv_label_set_text(label_percent_sign, "%");
   lv_obj_set_style_text_font(label_percent_sign, &lv_font_montserrat_24, 0);
-  lv_obj_set_style_text_color(label_percent_sign, lv_color_hex(0xFFFF00), 0);  // Желтый
+  lv_obj_set_style_text_color(label_percent_sign, lv_color_hex(0xFFFF00), 0);
   lv_obj_align(label_percent_sign, LV_ALIGN_CENTER, -15, -15);
-  
+
   // ПРОЦЕНТ - десятичная часть (под знаком %, ближе, левее)
   label_percent_decimal = lv_label_create(screen_running);
-  if (profile_loaded) {
-    int decimal = (int)((current_percent - (int)current_percent) * 10);
-    snprintf(buf, sizeof(buf), ".%d", decimal);
-  } else {
-    snprintf(buf, sizeof(buf), "");  // Пусто если нет профиля
-  }
+  int decimal = (int)((current_percent - (int)current_percent) * 10);
+  snprintf(buf, sizeof(buf), ".%d", decimal);
   lv_label_set_text(label_percent_decimal, buf);
   lv_obj_set_style_text_font(label_percent_decimal, &lv_font_montserrat_20, 0);
   lv_obj_set_style_text_color(label_percent_decimal, lv_color_white(), 0);
@@ -975,19 +971,15 @@ void create_all_screens() {
   
   // Длина (белый, меньше, левее)
   label_length_value = lv_label_create(screen_running);
-  if (profile_loaded) {
-    snprintf(buf, sizeof(buf), "%dm", current_length);
-  } else {
-    snprintf(buf, sizeof(buf), "?");
-  }
+  snprintf(buf, sizeof(buf), "%dm", current_length);
   lv_label_set_text(label_length_value, buf);
   lv_obj_set_style_text_font(label_length_value, &lv_font_montserrat_16, 0);
   lv_obj_set_style_text_color(label_length_value, lv_color_white(), 0);
   lv_obj_align(label_length_value, LV_ALIGN_CENTER, 65, 25);
-  
-  // ВРЕМЯ (внизу по центру, без секунд и MSK, выше)
+
+  // ВРЕМЯ (внизу по центру, МСК)
   label_time = lv_label_create(screen_running);
-  lv_label_set_text(label_time, "12:34");
+  lv_label_set_text(label_time, "--:--");
   lv_obj_set_style_text_font(label_time, &lv_font_montserrat_20, 0);
   lv_obj_set_style_text_color(label_time, lv_color_hex(0x808080), 0);
   lv_obj_align(label_time, LV_ALIGN_BOTTOM_MID, 0, -30);
@@ -1073,30 +1065,15 @@ void update_weight(float weight) {
 // ============================================
 void update_percent(float percent) {
   current_percent = percent;
-  
-  Serial.printf("[DEBUG] update_percent вызван: %.1f%%, screen=%d\n", percent, current_screen);
-  
-  if (current_screen == 6) {  // Только если на экране RUNNING
-    Serial.println("[DEBUG] Обновляем процент...");
-    
-    if (!profile_loaded) {
-      Serial.println("[DEBUG] Профиль не загружен, показываем '?'");
-      lv_label_set_text(label_percent_main, "?");
-      lv_label_set_text(label_percent_decimal, "");
-      lv_obj_set_style_text_font(label_percent_main, &lv_font_montserrat_48, 0);
-      lv_refr_now(disp);
-      return;
-    }
-    
+
+  if (current_screen == 6) {
     // Обновляем прогресс-бар (масштабируем на 270°)
     int arc_value = (int)(percent * 270.0 / 100.0);
-    Serial.printf("[DEBUG] Arc value: %d\n", arc_value);
     lv_arc_set_value(arc_progress, arc_value);
-    
-    // Основная цифра - автоматическое масштабирование для 100%
+
+    // Основная цифра
     char buf[16];
     if (percent >= 100) {
-      // Для 100% используем меньший шрифт
       snprintf(buf, sizeof(buf), "%d", (int)percent);
       lv_label_set_text(label_percent_main, buf);
       lv_obj_set_style_text_font(label_percent_main, &lv_font_montserrat_32, 0);
@@ -1105,15 +1082,13 @@ void update_percent(float percent) {
       lv_label_set_text(label_percent_main, buf);
       lv_obj_set_style_text_font(label_percent_main, &lv_font_montserrat_48, 0);
     }
-    
+
     // Десятичная часть
     int decimal = (int)((percent - (int)percent) * 10);
     snprintf(buf, sizeof(buf), ".%d", decimal);
     lv_label_set_text(label_percent_decimal, buf);
-    
-    lv_refr_now(disp);  // Принудительная перерисовка!
-    
-    Serial.println("[DEBUG] Процент обновлен + lv_refr_now");
+
+    lv_refr_now(disp);
   }
 }
 
@@ -1122,28 +1097,16 @@ void update_percent(float percent) {
 // ============================================
 void update_length(int length) {
   current_length = length;
-  
-  Serial.printf("[DEBUG] update_length вызван: %dm, screen=%d\n", length, current_screen);
-  
-  if (current_screen == 6) {  // Только если на экране RUNNING
-    if (!profile_loaded) {
-      Serial.println("[DEBUG] Профиль не загружен, показываем '?'");
-      lv_label_set_text(label_length_value, "?");
-      lv_refr_now(disp);
-      return;
-    }
-    
+
+  if (current_screen == 6) {
     char buf[32];
-    // Автоматическое масштабирование для больших чисел
     if (length >= 1000) {
       snprintf(buf, sizeof(buf), "%.1fkm", length / 1000.0);
     } else {
       snprintf(buf, sizeof(buf), "%dm", length);
     }
     lv_label_set_text(label_length_value, buf);
-    lv_refr_now(disp);  // Принудительная перерисовка!
-    
-    Serial.println("[DEBUG] Длина обновлена + lv_refr_now");
+    lv_refr_now(disp);
   }
 }
 
@@ -1152,13 +1115,8 @@ void update_length(int length) {
 // ============================================
 void update_material_and_manufacturer() {
   if (current_screen == 6) {
-    if (profile_loaded) {
-      lv_label_set_text(label_material, current_material.c_str());
-      lv_label_set_text(label_manufacturer, current_manufacturer.c_str());
-    } else {
-      lv_label_set_text(label_material, "?");
-      lv_label_set_text(label_manufacturer, "?");
-    }
+    lv_label_set_text(label_material, current_material.c_str());
+    lv_label_set_text(label_manufacturer, current_manufacturer.c_str());
     lv_refr_now(disp);
   }
 }
@@ -1167,14 +1125,20 @@ void update_material_and_manufacturer() {
 // ОБНОВЛЕНИЕ ВРЕМЕНИ
 // ============================================
 void update_time() {
-  // Получаем текущее время (в реальной версии будет NTP)
-  unsigned long seconds = millis() / 1000;
-  int h = (seconds / 3600) % 24;
-  int m = (seconds / 60) % 60;
-  
+  struct tm timeinfo;
   char buf[32];
-  snprintf(buf, sizeof(buf), "%02d:%02d", h, m);
-  lv_label_set_text(label_time, buf);
+
+  if (getLocalTime(&timeinfo)) {
+    // Реальное время по МСК
+    snprintf(buf, sizeof(buf), "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+  } else {
+    // Если NTP не синхронизировано, показываем "--:--"
+    snprintf(buf, sizeof(buf), "--:--");
+  }
+
+  if (current_screen == 6) {
+    lv_label_set_text(label_time, buf);
+  }
 }
 
 // ============================================
@@ -1282,11 +1246,14 @@ void checkNFC() {
   if (currentState != STATE_WAIT_NFC) {
     return;
   }
-  
+
   // Переключаем SPI на NFC
   SPI.end();
   SPI.begin(LCD_SCK, RC522_MISO, LCD_MOSI, RC522_CS);
-  
+
+  // Переинициализируем MFRC522 после смены SPI
+  rfid.PCD_Init();
+
   if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
     String uid = "";
     for (byte i = 0; i < rfid.uid.size; i++) {
@@ -1838,21 +1805,32 @@ bool writeNfcData(String filamentId) {
   SPI.end();
   SPI.begin(LCD_SCK, RC522_MISO, LCD_MOSI, RC522_CS);
 
+  // Переинициализируем MFRC522 после смены SPI
+  rfid.PCD_Init();
+  delay(10);
+
   // Сбрасываем lastNfcUid чтобы карта могла быть прочитана после записи
   lastNfcUid = "";
 
-  // Пробуем обнаружить карту - сначала WakeupA (для ранее прочитанных карт), потом IsNewCardPresent
-  byte atqa[2];
-  byte atqaLen = sizeof(atqa);
+  // Пробуем обнаружить карту несколько раз
   bool cardFound = false;
 
-  // Пробуем разбудить карту в HALT состоянии
-  if (rfid.PICC_WakeupA(atqa, &atqaLen) == MFRC522::STATUS_OK) {
-    cardFound = true;
-    Serial.println("[NFC] Карта разбужена (WakeupA)");
-  } else if (rfid.PICC_IsNewCardPresent()) {
-    cardFound = true;
-    Serial.println("[NFC] Обнаружена новая карта");
+  for (int attempt = 0; attempt < 3 && !cardFound; attempt++) {
+    // Пробуем разбудить карту в HALT состоянии
+    byte atqa[2];
+    byte atqaLen = sizeof(atqa);
+
+    if (rfid.PICC_WakeupA(atqa, &atqaLen) == MFRC522::STATUS_OK) {
+      cardFound = true;
+      Serial.println("[NFC] Карта разбужена (WakeupA)");
+    } else if (rfid.PICC_IsNewCardPresent()) {
+      cardFound = true;
+      Serial.println("[NFC] Обнаружена новая карта");
+    }
+
+    if (!cardFound) {
+      delay(50);
+    }
   }
 
   if (!cardFound) {
