@@ -29,6 +29,21 @@
 #include "config.h"
 
 // ============================================
+// FORWARD DECLARATIONS (для Arduino preprocessor)
+// ============================================
+enum UIState {
+  STATE_BOOT = 1,
+  STATE_WAIT_SPOOL = 2,
+  STATE_SELECT_METHOD = 3,
+  STATE_WAIT_NFC = 4,
+  STATE_WAIT_APP = 5,
+  STATE_RUNNING = 6
+};
+
+bool isValidTransition(UIState from, UIState to);
+bool transitionToState(UIState newState);
+
+// ============================================
 // СИНХРОНИЗАЦИЯ И БЕЗОПАСНОСТЬ
 // ============================================
 SemaphoreHandle_t stateMutex = NULL;      // Mutex для состояния и профиля
@@ -116,14 +131,7 @@ String current_material = "PLA";
 String current_manufacturer = "LIDER-3D";
 String lastNfcUid = "";
 
-enum UIState {
-  STATE_BOOT = 1,
-  STATE_WAIT_SPOOL = 2,
-  STATE_SELECT_METHOD = 3,
-  STATE_WAIT_NFC = 4,
-  STATE_WAIT_APP = 5,
-  STATE_RUNNING = 6
-};
+// UIState уже объявлен выше (forward declaration)
 volatile UIState currentState = STATE_BOOT;
 
 // ============================================
@@ -2194,7 +2202,7 @@ void sendProfileList() {
 
     if (line.length() > 0 && line.startsWith("{")) {
       // Парсим JSON для извлечения только нужных полей
-      DynamicJsonDocument doc(512);
+      JsonDocument doc;
       DeserializationError error = deserializeJson(doc, line);
 
       if (!error) {
