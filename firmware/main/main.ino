@@ -23,8 +23,19 @@
 #include <HX711.h>
 #include <LittleFS.h>
 #include <ArduinoJson.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 
 #include "config.h"
+
+// ============================================
+// СИНХРОНИЗАЦИЯ И БЕЗОПАСНОСТЬ
+// ============================================
+SemaphoreHandle_t stateMutex = NULL;      // Mutex для состояния и профиля
+SemaphoreHandle_t spiMutex = NULL;        // Mutex для SPI (LCD/NFC)
+
+// Максимальный размер JSON для валидации
+#define MAX_JSON_SIZE 2048
 
 #define TOUCH_I2C_ADDR 0x15
 
@@ -90,16 +101,19 @@ struct FilamentData {
   int bed_temp = 60;
 } currentFilament;
 
-float currentWeight = 0.0f;
-float netWeight = 0.0f;
-float current_percent = 75.5f;
-int current_length = 250;
-int current_screen = 1;
+// Volatile переменные для межпоточного доступа
+volatile float currentWeight = 0.0f;
+volatile float netWeight = 0.0f;
+volatile float current_percent = 75.5f;
+volatile int current_length = 250;
+volatile int current_screen = 1;
+volatile bool profile_loaded = false;
+volatile bool deviceConnected = false;
+volatile bool sendingProfilesNow = false;  // Защита от конкурентных отправок профилей
+
+// Не-volatile (защищены mutex или используются только в одном потоке)
 String current_material = "PLA";
 String current_manufacturer = "LIDER-3D";
-bool profile_loaded = false;
-bool deviceConnected = false;
-bool sendingProfilesNow = false;  // Защита от конкурентных отправок профилей
 String lastNfcUid = "";
 
 enum UIState {
@@ -110,7 +124,53 @@ enum UIState {
   STATE_WAIT_APP = 5,
   STATE_RUNNING = 6
 };
-UIState currentState = STATE_BOOT;
+volatile UIState currentState = STATE_BOOT;
+
+// ============================================
+// STATE MACHINE - Валидация переходов
+// ============================================
+bool isValidTransition(UIState from, UIState to) {
+  switch (from) {
+    case STATE_BOOT:
+      return (to == STATE_WAIT_SPOOL || to == STATE_SELECT_METHOD);
+    case STATE_WAIT_SPOOL:
+      return (to == STATE_SELECT_METHOD);
+    case STATE_SELECT_METHOD:
+      return (to == STATE_WAIT_SPOOL || to == STATE_WAIT_NFC ||
+              to == STATE_WAIT_APP || to == STATE_RUNNING);
+    case STATE_WAIT_NFC:
+      return (to == STATE_WAIT_SPOOL || to == STATE_SELECT_METHOD || to == STATE_RUNNING);
+    case STATE_WAIT_APP:
+      return (to == STATE_WAIT_SPOOL || to == STATE_SELECT_METHOD || to == STATE_RUNNING);
+    case STATE_RUNNING:
+      return (to == STATE_WAIT_SPOOL || to == STATE_SELECT_METHOD);
+    default:
+      return false;
+  }
+}
+
+// Безопасный переход состояния с mutex
+bool transitionToState(UIState newState) {
+  if (stateMutex == NULL) {
+    // Mutex ещё не создан (ранняя инициализация)
+    currentState = newState;
+    return true;
+  }
+  if (xSemaphoreTake(stateMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+    UIState oldState = currentState;
+    if (isValidTransition(oldState, newState)) {
+      currentState = newState;
+      xSemaphoreGive(stateMutex);
+      Serial.printf("[STATE] %d -> %d\n", oldState, newState);
+      return true;
+    } else {
+      xSemaphoreGive(stateMutex);
+      Serial.printf("[STATE] INVALID: %d -> %d\n", oldState, newState);
+      return false;
+    }
+  }
+  return false;
+}
 
 void my_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map);
 void create_all_screens();
@@ -144,10 +204,20 @@ void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data);
 void setup() {
   Serial.begin(115200);
   delay(1000);
-  
+
   Serial.println("\nSmart Filament Holder");
   Serial.println("ESP32-C6 + GC9A01 + LVGL\n");
-  
+
+  // Инициализация FreeRTOS примитивов синхронизации
+  Serial.print("[0/8] FreeRTOS sync... ");
+  stateMutex = xSemaphoreCreateMutex();
+  spiMutex = xSemaphoreCreateMutex();
+  if (stateMutex && spiMutex) {
+    Serial.println("OK");
+  } else {
+    Serial.println("FAILED!");
+  }
+
   Serial.print("[1/8] LittleFS... ");
   if (!LittleFS.begin(true)) {
     Serial.println("ERROR: LittleFS mount failed");
@@ -349,7 +419,16 @@ void setup() {
   class MyCharCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
       String value = pCharacteristic->getValue().c_str();
-      Serial.printf("[BLE] Получено: %s\n", value.c_str());
+
+      // Валидация размера JSON
+      if (value.length() > MAX_JSON_SIZE) {
+        Serial.printf("[BLE] ОШИБКА: Слишком большой JSON (%d > %d)\n", value.length(), MAX_JSON_SIZE);
+        return;
+      }
+
+      Serial.printf("[BLE] Получено (%d байт): %.100s%s\n",
+                    value.length(), value.c_str(),
+                    value.length() > 100 ? "..." : "");
       
       // Команда TARE
       if (value.indexOf("\"cmd\":\"tare\"") >= 0 || value.indexOf("tare") >= 0) {
@@ -409,37 +488,41 @@ void setup() {
               return;
             }
             
-            // Безопасное извлечение данных
-            currentFilament.id = doc["id"] | "";
-            currentFilament.material = doc["material"] | "?";
-            currentFilament.manufacturer = doc["manufacturer"] | "?";
-            currentFilament.weight = doc["weight"] | 0.0f;
-            currentFilament.spool_weight = doc["spool_weight"] | doc["spoolWeight"] | 0.0f;
-            currentFilament.diameter = doc["diameter"] | 1.75f;
-            currentFilament.density = doc["density"] | 1.24f;
-            currentFilament.bed_temp = doc["bed_temp"] | doc["bedTemp"] | 60;
-            
-            current_material = currentFilament.material;
-            current_manufacturer = currentFilament.manufacturer;
-            profile_loaded = true;
-            
-            Serial.print("[FILAMENT] Загружен через BLE: ");
-            Serial.print(currentFilament.material);
-            Serial.print(" (");
-            Serial.print(currentFilament.manufacturer);
-            Serial.println(")");
-            
-            // Переход в STATE_RUNNING если есть катушка на весах
-            if (currentWeight > MIN_SPOOL_WEIGHT) {
-              currentState = STATE_RUNNING;
-              Serial.println("[UI] Профиль загружен через BLE, переход в RUNNING");
-              load_screen(6);
+            // Защита mutex при записи в разделяемые данные
+            if (xSemaphoreTake(stateMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+              currentFilament.id = doc["id"] | "";
+              currentFilament.material = doc["material"] | "?";
+              currentFilament.manufacturer = doc["manufacturer"] | "?";
+              currentFilament.weight = doc["weight"] | 0.0f;
+              currentFilament.spool_weight = doc["spool_weight"] | doc["spoolWeight"] | 0.0f;
+              currentFilament.diameter = doc["diameter"] | 1.75f;
+              currentFilament.density = doc["density"] | 1.24f;
+              currentFilament.bed_temp = doc["bed_temp"] | doc["bedTemp"] | 60;
+
+              current_material = currentFilament.material;
+              current_manufacturer = currentFilament.manufacturer;
+              profile_loaded = true;
+              xSemaphoreGive(stateMutex);
+
+              Serial.print("[FILAMENT] Загружен через BLE: ");
+              Serial.print(currentFilament.material);
+              Serial.print(" (");
+              Serial.print(currentFilament.manufacturer);
+              Serial.println(")");
+
+              // Переход в STATE_RUNNING если есть катушка на весах
+              if (currentWeight > MIN_SPOOL_WEIGHT) {
+                transitionToState(STATE_RUNNING);
+                Serial.println("[UI] Профиль загружен через BLE, переход в RUNNING");
+                load_screen(6);
+              } else {
+                Serial.println("[UI] Профиль загружен, но катушка не обнаружена");
+              }
+
+              saveLastFilament();
             } else {
-              Serial.println("[UI] Профиль загружен, но катушка не обнаружена (вес < MIN_SPOOL_WEIGHT)");
-              // Остаемся на текущем экране, профиль сохранен и будет использован когда катушку положат
+              Serial.println("[BLE] ОШИБКА: Не удалось получить mutex");
             }
-            
-            saveLastFilament();
           }
         }
       }
@@ -1146,17 +1229,23 @@ void update_time() {
 // ============================================
 void btn_nfc_event(lv_event_t* e) {
   Serial.println("→ Выбран NFC");
-  load_screen(4);
+  if (transitionToState(STATE_WAIT_NFC)) {
+    load_screen(4);
+  }
 }
 
 void btn_app_event(lv_event_t* e) {
   Serial.println("→ Выбран APP");
-  load_screen(5);
+  if (transitionToState(STATE_WAIT_APP)) {
+    load_screen(5);
+  }
 }
 
 void btn_back_event(lv_event_t* e) {
   Serial.println("→ Возврат к выбору метода");
-  load_screen(3);
+  if (transitionToState(STATE_SELECT_METHOD)) {
+    load_screen(3);
+  }
 }
 
 // ============================================
@@ -1184,41 +1273,34 @@ void updateWeightSensor() {
   
   // Автоматический переход из STATE_WAIT_SPOOL в SELECT_METHOD
   if (currentState == STATE_WAIT_SPOOL && currentWeight > MIN_SPOOL_WEIGHT) {
-    // ВСЕГДА показываем выбор метода, даже если профиль загружен
-    currentState = STATE_SELECT_METHOD;
-    Serial.println("[UI] Катушка обнаружена, показываем выбор метода");
-    load_screen(3);
+    if (transitionToState(STATE_SELECT_METHOD)) {
+      Serial.println("[UI] Катушка обнаружена, показываем выбор метода");
+      load_screen(3);
+    }
   }
 
   // Автоматический возврат из SELECT_METHOD в WAIT_SPOOL если вес убрали
   if (currentState == STATE_SELECT_METHOD && currentWeight < MIN_SPOOL_WEIGHT) {
-    currentState = STATE_WAIT_SPOOL;
-    Serial.println("[UI] Катушка убрана, возврат к ожиданию");
-    load_screen(2);
+    if (transitionToState(STATE_WAIT_SPOOL)) {
+      Serial.println("[UI] Катушка убрана, возврат к ожиданию");
+      load_screen(2);
+    }
   }
 
-  // Возврат из WAIT_NFC/WAIT_APP в SELECT_METHOD если вес убрали
+  // Возврат из WAIT_NFC/WAIT_APP в WAIT_SPOOL если вес убрали
   if ((currentState == STATE_WAIT_NFC || currentState == STATE_WAIT_APP) && currentWeight < MIN_SPOOL_WEIGHT) {
-    currentState = STATE_WAIT_SPOOL;
-    Serial.println("[UI] Катушка убрана во время ожидания, возврат");
-    load_screen(2);
+    if (transitionToState(STATE_WAIT_SPOOL)) {
+      Serial.println("[UI] Катушка убрана во время ожидания, возврат");
+      load_screen(2);
+    }
   }
-  /*
-  // Переход из SELECT_METHOD/WAIT_NFC/WAIT_APP в RUNNING если профиль загрузился
-  if ((currentState == STATE_SELECT_METHOD || currentState == STATE_WAIT_NFC || currentState == STATE_WAIT_APP) 
-      && profile_loaded && currentWeight > MIN_SPOOL_WEIGHT) {
-    currentState = STATE_RUNNING;
-    Serial.println("[UI] Профиль загружен + катушка на месте, переход в RUNNING");
-    load_screen(6);
-  }
-  */
-  
+
   // Возврат из RUNNING в WAIT_SPOOL если катушку убрали
   if (currentState == STATE_RUNNING && currentWeight < MIN_SPOOL_WEIGHT) {
-    currentState = STATE_WAIT_SPOOL;
-    Serial.println("[UI] Катушка убрана из RUNNING, возврат к ожиданию");
-    load_screen(2);
-    // Профиль остается загруженным (profile_loaded = true)
+    if (transitionToState(STATE_WAIT_SPOOL)) {
+      Serial.println("[UI] Катушка убрана из RUNNING, возврат к ожиданию");
+      load_screen(2);
+    }
   }
   
   if (current_screen == 6) {
@@ -1247,6 +1329,11 @@ void checkNFC() {
     return;
   }
 
+  // Захватываем SPI mutex с таймаутом
+  if (xSemaphoreTake(spiMutex, pdMS_TO_TICKS(50)) != pdTRUE) {
+    return;  // SPI занят, пропускаем эту итерацию
+  }
+
   // Переключаем SPI на NFC
   SPI.end();
   SPI.begin(LCD_SCK, RC522_MISO, LCD_MOSI, RC522_CS);
@@ -1261,39 +1348,39 @@ void checkNFC() {
       uid += String(rfid.uid.uidByte[i], HEX);
     }
     uid.toUpperCase();
-    
-    // ИСПРАВЛЕНИЕ: Сбрасываем lastNfcUid после успешного чтения
+
     if (uid != lastNfcUid) {
       lastNfcUid = uid;
       Serial.print("[NFC] Карта: ");
       Serial.println(uid);
-      
+
       String filamentId = readNfcData();
       if (filamentId.length() > 0) {
         loadFilamentProfile(filamentId);
         if (profile_loaded) {
-          currentState = STATE_RUNNING;
+          transitionToState(STATE_RUNNING);
           Serial.println("[UI] Профиль загружен через NFC, переход в RUNNING");
           load_screen(6);
-          // Сбрасываем UID чтобы можно было прочитать ту же карту снова
           lastNfcUid = "";
         } else {
-          // Профиль не найден - тоже сбрасываем чтобы можно было попробовать снова
           lastNfcUid = "";
         }
       }
     }
-    
+
     rfid.PICC_HaltA();
     rfid.PCD_StopCrypto1();
   }
-  
+
   // Возвращаем SPI на дисплей
   SPI.end();
   SPI.begin(LCD_SCK, -1, LCD_MOSI, LCD_CS);
   SPI.setDataMode(SPI_MODE0);
   SPI.setBitOrder(MSBFIRST);
   SPI.setFrequency(40000000);
+
+  // Освобождаем SPI mutex
+  xSemaphoreGive(spiMutex);
 }
 
 // Проверка типа NFC карты
@@ -1500,14 +1587,14 @@ void loadFilamentProfile(String filamentId) {
   
   // Переход в STATE_RUNNING если есть катушка на весах
   if (currentWeight > MIN_SPOOL_WEIGHT) {
-    currentState = STATE_RUNNING;
-    Serial.println("[UI] Профиль загружен, переход в RUNNING");
-    load_screen(6);
+    if (transitionToState(STATE_RUNNING)) {
+      Serial.println("[UI] Профиль загружен, переход в RUNNING");
+      load_screen(6);
+    }
   } else {
-    Serial.println("[UI] Профиль загружен, но катушка не обнаружена (вес < MIN_SPOOL_WEIGHT)");
-    // Остаемся на текущем экране, профиль сохранен и будет использован когда катушку положат
+    Serial.println("[UI] Профиль загружен, но катушка не обнаружена");
   }
-  
+
   saveLastFilament();
 }
 
@@ -1801,6 +1888,12 @@ bool writeMifareData(String filamentId) {
 bool writeNfcData(String filamentId) {
   Serial.println("[NFC] Начало записи...");
 
+  // Захватываем SPI mutex с таймаутом 500мс
+  if (xSemaphoreTake(spiMutex, pdMS_TO_TICKS(500)) != pdTRUE) {
+    Serial.println("[NFC] ОШИБКА: SPI занят");
+    return false;
+  }
+
   // Переключаем SPI на NFC
   SPI.end();
   SPI.begin(LCD_SCK, RC522_MISO, LCD_MOSI, RC522_CS);
@@ -1816,7 +1909,6 @@ bool writeNfcData(String filamentId) {
   bool cardFound = false;
 
   for (int attempt = 0; attempt < 3 && !cardFound; attempt++) {
-    // Пробуем разбудить карту в HALT состоянии
     byte atqa[2];
     byte atqaLen = sizeof(atqa);
 
@@ -1836,12 +1928,14 @@ bool writeNfcData(String filamentId) {
   if (!cardFound) {
     Serial.println("[NFC] Карта не обнаружена");
     restoreLcdSpi();
+    xSemaphoreGive(spiMutex);
     return false;
   }
 
   if (!rfid.PICC_ReadCardSerial()) {
     Serial.println("[NFC] Ошибка чтения серийного номера");
     restoreLcdSpi();
+    xSemaphoreGive(spiMutex);
     return false;
   }
 
@@ -1859,8 +1953,9 @@ bool writeNfcData(String filamentId) {
   rfid.PICC_HaltA();
   rfid.PCD_StopCrypto1();
 
-  // Возвращаем SPI на LCD
+  // Возвращаем SPI на LCD и освобождаем mutex
   restoreLcdSpi();
+  xSemaphoreGive(spiMutex);
 
   return success;
 }
