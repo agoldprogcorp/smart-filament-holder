@@ -138,6 +138,9 @@ volatile UIState currentState = STATE_BOOT;
 // STATE MACHINE - Валидация переходов
 // ============================================
 bool isValidTransition(UIState from, UIState to) {
+  // Разрешаем оставаться в том же состоянии (например, смена профиля в RUNNING)
+  if (from == to) return true;
+
   switch (from) {
     case STATE_BOOT:
       return (to == STATE_WAIT_SPOOL || to == STATE_SELECT_METHOD);
@@ -1098,18 +1101,20 @@ void load_screen(int screen_num) {
     case 5: 
       lv_scr_load(screen_wait_app); 
       break;
-    case 6: 
+    case 6:
       lv_scr_load(screen_running);
       // Обновляем все виджеты при загрузке экрана
       Serial.println("[DEBUG] Экран 6 загружен, обновляем виджеты...");
+      update_material_and_manufacturer();  // ВАЖНО: обновляем материал/производителя
       update_weight(currentWeight);
       update_percent(current_percent);
       update_length(current_length);
+      update_time();  // Обновляем время
       break;
   }
   
-  lv_refr_now(disp);  // Принудительная перерисовка после переключения
-  Serial.printf("[DEBUG] Экран %d загружен и перерисован\n", screen_num);
+  // НЕ вызываем lv_refr_now() - LVGL обновляется автоматически в loop()
+  Serial.printf("[DEBUG] Экран %d загружен\n", screen_num);
 }
 
 // ============================================
@@ -1117,38 +1122,22 @@ void load_screen(int screen_num) {
 // ============================================
 void update_weight(float weight) {
   currentWeight = weight;
-  
+
   // Вычисляем чистый вес (вес филамента без катушки)
   float displayWeight = netWeight; // Показываем чистый вес филамента
-  
-  Serial.printf("[DEBUG] update_weight вызван: общий=%.0fg, чистый=%.0fg, screen=%d\n", 
-                weight, displayWeight, current_screen);
-  
+
   if (current_screen == 6) {  // Только если на экране RUNNING
-    Serial.println("[DEBUG] Экран 6 активен, обновляем виджет...");
-    
-    // Проверяем что виджет существует
-    if (label_weight_value == NULL) {
-      Serial.println("[ERROR] label_weight_value == NULL!");
-      return;
-    }
-    
+    if (label_weight_value == NULL) return;
+
     char buf[32];
-    // Автоматическое масштабирование для больших чисел
     if (displayWeight >= 1000) {
       snprintf(buf, sizeof(buf), "%.1fkg", displayWeight / 1000.0);
     } else {
       snprintf(buf, sizeof(buf), "%dg", (int)displayWeight);
     }
-    Serial.printf("[DEBUG] Новый текст: %s (чистый вес филамента)\n", buf);
-    
     lv_label_set_text(label_weight_value, buf);
-    lv_refr_now(disp);  // Принудительная перерисовка!
-    
-    Serial.println("[DEBUG] lv_label_set_text + lv_refr_now выполнены");
-  } else {
-    Serial.printf("[DEBUG] Экран %d не активен, пропускаем обновление\n", current_screen);
   }
+  // Не выводим debug для неактивного экрана - слишком частое обновление
 }
 
 // ============================================
@@ -1178,8 +1167,6 @@ void update_percent(float percent) {
     int decimal = (int)((percent - (int)percent) * 10);
     snprintf(buf, sizeof(buf), ".%d", decimal);
     lv_label_set_text(label_percent_decimal, buf);
-
-    lv_refr_now(disp);
   }
 }
 
@@ -1197,7 +1184,6 @@ void update_length(int length) {
       snprintf(buf, sizeof(buf), "%dm", length);
     }
     lv_label_set_text(label_length_value, buf);
-    lv_refr_now(disp);
   }
 }
 
@@ -1208,7 +1194,6 @@ void update_material_and_manufacturer() {
   if (current_screen == 6) {
     lv_label_set_text(label_material, current_material.c_str());
     lv_label_set_text(label_manufacturer, current_manufacturer.c_str());
-    lv_refr_now(disp);
   }
 }
 
@@ -1219,12 +1204,20 @@ void update_time() {
   struct tm timeinfo;
   char buf[32];
 
-  if (getLocalTime(&timeinfo)) {
-    // Реальное время по МСК
+  // getLocalTime с таймаутом 100мс
+  if (getLocalTime(&timeinfo, 100)) {
+    // Реальное время по МСК (NTP уже настроен на UTC+3)
     snprintf(buf, sizeof(buf), "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
   } else {
     // Если NTP не синхронизировано, показываем "--:--"
     snprintf(buf, sizeof(buf), "--:--");
+
+    // Debug: сообщаем о проблеме только каждые 30 секунд
+    static unsigned long lastNtpWarn = 0;
+    if (millis() - lastNtpWarn > 30000) {
+      lastNtpWarn = millis();
+      Serial.println("[NTP] Время не синхронизировано");
+    }
   }
 
   if (current_screen == 6) {
@@ -1337,19 +1330,63 @@ void checkNFC() {
     return;
   }
 
+  // Debug счётчик для отслеживания работы
+  static unsigned long nfcCheckCount = 0;
+  nfcCheckCount++;
+
+  // Выводим debug каждые 25 проверок (~5 секунд при 200мс интервале)
+  if (nfcCheckCount % 25 == 0) {
+    Serial.printf("[NFC] Сканирование... (проверка #%lu)\n", nfcCheckCount);
+  }
+
   // Захватываем SPI mutex с таймаутом
   if (xSemaphoreTake(spiMutex, pdMS_TO_TICKS(50)) != pdTRUE) {
-    return;  // SPI занят, пропускаем эту итерацию
+    Serial.println("[NFC] SPI mutex занят, пропускаем");
+    return;
   }
 
   // Переключаем SPI на NFC
   SPI.end();
   SPI.begin(LCD_SCK, RC522_MISO, LCD_MOSI, RC522_CS);
 
-  // Переинициализируем MFRC522 после смены SPI
-  rfid.PCD_Init();
+  // Даём время на стабилизацию SPI
+  delay(5);
 
-  if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
+  // Полная инициализация RC522 (как при записи)
+  rfid.PCD_Init();
+  delay(5);
+
+  // Пробуем обнаружить карту несколькими способами
+  bool cardFound = false;
+
+  // Способ 1: WakeupA - будит карту в режиме HALT
+  byte atqa[2];
+  byte atqaLen = sizeof(atqa);
+  if (rfid.PICC_WakeupA(atqa, &atqaLen) == MFRC522::STATUS_OK) {
+    cardFound = true;
+  }
+
+  // Способ 2: Стандартное обнаружение новой карты
+  if (!cardFound && rfid.PICC_IsNewCardPresent()) {
+    cardFound = true;
+  }
+
+  bool newCard = cardFound;
+
+  if (!newCard) {
+    // Нет карты - освобождаем SPI и выходим
+    SPI.end();
+    SPI.begin(LCD_SCK, -1, LCD_MOSI, LCD_CS);
+    SPI.setDataMode(SPI_MODE0);
+    SPI.setBitOrder(MSBFIRST);
+    SPI.setFrequency(40000000);
+    xSemaphoreGive(spiMutex);
+    return;
+  }
+
+  Serial.println("[NFC] Обнаружена карта!");
+
+  if (rfid.PICC_ReadCardSerial()) {
     String uid = "";
     for (byte i = 0; i < rfid.uid.size; i++) {
       if (rfid.uid.uidByte[i] < 0x10) uid += "0";
@@ -1357,12 +1394,14 @@ void checkNFC() {
     }
     uid.toUpperCase();
 
+    Serial.printf("[NFC] UID: %s\n", uid.c_str());
+
     if (uid != lastNfcUid) {
       lastNfcUid = uid;
-      Serial.print("[NFC] Карта: ");
-      Serial.println(uid);
 
       String filamentId = readNfcData();
+      Serial.printf("[NFC] Прочитанный ID: '%s' (длина: %d)\n", filamentId.c_str(), filamentId.length());
+
       if (filamentId.length() > 0) {
         loadFilamentProfile(filamentId);
         if (profile_loaded) {
@@ -1371,13 +1410,21 @@ void checkNFC() {
           load_screen(6);
           lastNfcUid = "";
         } else {
+          Serial.println("[NFC] Профиль не найден в базе данных");
           lastNfcUid = "";
         }
+      } else {
+        Serial.println("[NFC] Не удалось прочитать данные с карты");
+        lastNfcUid = "";
       }
+    } else {
+      Serial.println("[NFC] Карта уже была прочитана");
     }
 
     rfid.PICC_HaltA();
     rfid.PCD_StopCrypto1();
+  } else {
+    Serial.println("[NFC] Не удалось прочитать серийный номер карты");
   }
 
   // Возвращаем SPI на дисплей
