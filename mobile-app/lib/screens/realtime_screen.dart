@@ -1,7 +1,5 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../services/bluetooth_service.dart';
 
 class RealtimeScreen extends StatefulWidget {
@@ -12,33 +10,9 @@ class RealtimeScreen extends StatefulWidget {
 }
 
 class _RealtimeScreenState extends State<RealtimeScreen> {
-  late Timer _clockTimer;
-  DateTime _currentTime = DateTime.now();
-
-  @override
-  void initState() {
-    super.initState();
-    // Обновляем время каждую секунду
-    _clockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        _currentTime = DateTime.now();
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _clockTimer.cancel();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    // Время по МСК (UTC+3)
-    final moscowTime = _currentTime.toUtc().add(const Duration(hours: 3));
-    final timeString = DateFormat('HH:mm:ss').format(moscowTime);
-    final dateString = DateFormat('dd.MM.yyyy').format(moscowTime);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Мониторинг'),
@@ -46,21 +20,19 @@ class _RealtimeScreenState extends State<RealtimeScreen> {
       body: Consumer<BluetoothService>(
         builder: (context, bt, _) {
           if (!bt.isConnected) {
-            return Center(
+            return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  const Text('Устройство не подключено'),
-                  const SizedBox(height: 8),
-                  const Text(
+                  Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text('Устройство не подключено'),
+                  SizedBox(height: 8),
+                  Text(
                     'Подключитесь к держателю\nна главном экране',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey),
                   ),
-                  const Spacer(),
-                  _buildTimeDisplay(timeString, dateString),
                 ],
               ),
             );
@@ -69,7 +41,6 @@ class _RealtimeScreenState extends State<RealtimeScreen> {
           final data = bt.holderData;
 
           // Используем данные напрямую от ESP32
-          final grossWeight = data?.grossWeight ?? 0;
           final netWeight = data?.netWeight ?? 0;
           final percentValue = data?.percent ?? 0;
           final percent = (percentValue / 100).clamp(0.0, 1.0);
@@ -151,8 +122,6 @@ class _RealtimeScreenState extends State<RealtimeScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        _InfoRow('Общий вес', '${grossWeight.toStringAsFixed(0)} г'),
-                        const SizedBox(height: 8),
                         _InfoRow('Вес филамента', '${netWeight.toStringAsFixed(0)} г'),
                         const SizedBox(height: 8),
                         _InfoRow('Длина', lengthMeters > 0 ? '${lengthMeters.toStringAsFixed(0)} м' : '— м'),
@@ -186,43 +155,10 @@ class _RealtimeScreenState extends State<RealtimeScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-
-                // Время
-                _buildTimeDisplay(timeString, dateString),
-                const SizedBox(height: 16),
               ],
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildTimeDisplay(String time, String date) {
-    return Card(
-      color: Colors.grey.shade100,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        child: Column(
-          children: [
-            Text(
-              time,
-              style: const TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'monospace',
-              ),
-            ),
-            Text(
-              '$date (МСК)',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
