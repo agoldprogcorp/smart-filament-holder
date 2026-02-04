@@ -20,7 +20,7 @@ GCODE_TEMP_FOLDERS = [
     str(Path.home() / "AppData/Roaming/Creality/Creative3D/5.0/GCodes"),
 ]
 ESP32_PORTS = [80, 81]  # Порты для поиска катушек
-SCAN_TIMEOUT = 0.3
+SCAN_TIMEOUT = 1.0
 HOLDER_PREFIX = "FD"
 
 
@@ -68,20 +68,74 @@ def is_in_startup():
 
 
 def get_local_ip():
+    """Получает все локальные IP адреса и возвращает наиболее подходящий"""
+    import socket
+    
+    # Сначала пробуем стандартный способ
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
+        primary_ip = s.getsockname()[0]
         s.close()
-        return ip
     except:
-        return "192.168.1.1"
+        primary_ip = "192.168.1.1"
+    
+    # Получаем все IP адреса
+    hostname = socket.gethostname()
+    try:
+        all_ips = socket.gethostbyname_ex(hostname)[2]
+        # Фильтруем только приватные IP
+        private_ips = []
+        for ip in all_ips:
+            if (ip.startswith('192.168.') or 
+                ip.startswith('10.') or 
+                ip.startswith('172.')):
+                private_ips.append(ip)
+        
+        # Приоритет подсетей: 192.168.1.x, 192.168.0.x, потом остальные 192.168.x.x
+        priority_subnets = ['192.168.1.', '192.168.0.']
+        
+        for subnet in priority_subnets:
+            for ip in private_ips:
+                if ip.startswith(subnet):
+                    return ip
+        
+        # Потом любые 192.168.x.x
+        for ip in private_ips:
+            if ip.startswith('192.168.'):
+                return ip
+                
+        # Потом 10.x.x.x
+        for ip in private_ips:
+            if ip.startswith('10.'):
+                return ip
+                
+        # И наконец 172.x.x.x
+        if private_ips:
+            return private_ips[0]
+    except:
+        pass
+    
+    return primary_ip
 
 
 def scan_network_for_holders(callback):
+    """Сканирует несколько наиболее вероятных подсетей"""
+    # Получаем основной IP
     local_ip = get_local_ip()
     base_ip = ".".join(local_ip.split(".")[:-1])
+    
+    # Список подсетей для сканирования
+    subnets_to_scan = [base_ip]
+    
+    # Добавляем наиболее популярные подсети если их еще нет
+    common_subnets = ["192.168.1", "192.168.0", "10.0.0", "172.16.0"]
+    for subnet in common_subnets:
+        if subnet not in subnets_to_scan:
+            subnets_to_scan.append(subnet)
+    
     found = []
+    found_lock = threading.Lock()
 
     def check_ip_port(ip, port):
         try:
@@ -101,18 +155,34 @@ def scan_network_for_holders(callback):
                     density=data.get('density', 1.24),
                     weight=data.get('weight', 1000.0),
                 )
-                found.append(holder)
+                with found_lock:
+                    found.append(holder)
         except:
             pass
 
+    # Ограничиваем количество одновременных потоков
+    max_threads = 30
     threads = []
-    for i in range(1, 255):
-        ip = f"{base_ip}.{i}"
-        for port in ESP32_PORTS:
-            t = threading.Thread(target=check_ip_port, args=(ip, port))
-            t.start()
-            threads.append(t)
+    
+    # Сканируем каждую подсеть
+    for subnet in subnets_to_scan:
+        # Для каждой подсети сканируем только наиболее вероятные IP
+        common_host_ids = [1, 10, 11, 12, 13, 14, 15, 20, 100, 101, 102, 200, 254]
+        
+        for host_id in common_host_ids:
+            ip = f"{subnet}.{host_id}"
+            for port in ESP32_PORTS:
+                t = threading.Thread(target=check_ip_port, args=(ip, port))
+                t.start()
+                threads.append(t)
+                
+                # Ограничиваем количество активных потоков
+                if len(threads) >= max_threads:
+                    for thread in threads:
+                        thread.join()
+                    threads = []
 
+    # Ждем завершения оставшихся потоков
     for t in threads:
         t.join()
 
@@ -222,7 +292,7 @@ class FilamentCheckerWidget(QWidget):
 
     def init_ui(self):
         self.setWindowTitle("Filament Checker")
-        self.setFixedSize(360, 280)
+        self.setFixedSize(360, 320)  # Увеличиваем высоту чтобы всё влезло
         self.setWindowFlags(
             Qt.WindowType.WindowStaysOnTopHint |
             Qt.WindowType.FramelessWindowHint |
@@ -269,10 +339,11 @@ class FilamentCheckerWidget(QWidget):
                 selection-background-color: #505050;
             }
         """)
-        container.setGeometry(0, 0, 360, 280)
+        container.setGeometry(0, 0, 360, 320)
 
         layout = QVBoxLayout(container)
-        layout.setContentsMargins(15, 8, 15, 8)
+        layout.setContentsMargins(15, 10, 15, 12)  # Немного больше отступ снизу
+        layout.setSpacing(6)
 
         # Заголовок
         title = QLabel("Filament Checker")
@@ -320,15 +391,16 @@ class FilamentCheckerWidget(QWidget):
         self.percent_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.percent_label)
 
-        # Данные
+        # Данные - с достаточным местом
         data_layout = QHBoxLayout()
+        data_layout.setSpacing(20)
 
         left = QVBoxLayout()
         left_label = QLabel("На катушке:")
         left_label.setStyleSheet("font-size: 13px;")
         left.addWidget(left_label)
         self.available_label = QLabel("-- г")
-        self.available_label.setStyleSheet("font-size: 20px; font-weight: bold;")
+        self.available_label.setStyleSheet("font-size: 22px; font-weight: bold; padding-top: 5px; padding-bottom: 10px;")
         left.addWidget(self.available_label)
         data_layout.addLayout(left)
 
@@ -337,17 +409,18 @@ class FilamentCheckerWidget(QWidget):
         right_label.setStyleSheet("font-size: 13px;")
         right.addWidget(right_label)
         self.required_label = QLabel("-- г")
-        self.required_label.setStyleSheet("font-size: 20px; font-weight: bold;")
+        self.required_label.setStyleSheet("font-size: 22px; font-weight: bold; padding-top: 5px; padding-bottom: 10px;")
         right.addWidget(self.required_label)
         data_layout.addLayout(right)
 
         layout.addLayout(data_layout)
 
-        # Дополнительная информация (вес и длина)
-        self.weight_length_label = QLabel("")
-        self.weight_length_label.setStyleSheet("font-size: 13px; color: #888;")
-        self.weight_length_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self.weight_length_label)
+        # Длина внизу с отступом
+        self.length_label = QLabel("")
+        self.length_label.setStyleSheet("font-size: 11px; color: #666; padding-top: 8px;")
+        self.length_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.length_label.setMinimumHeight(20)  # Минимальная высота для текста
+        layout.addWidget(self.length_label)
 
         # Позиция
         screen = QApplication.primaryScreen().geometry()
@@ -413,49 +486,38 @@ class FilamentCheckerWidget(QWidget):
             self.update_display()
 
     def do_check(self):
-        """Кнопка проверки — полный скан сети + поиск gcode"""
+        """Кнопка проверки — обновление данных катушек + поиск gcode"""
         self.check_btn.setEnabled(False)
         self.check_btn.setText("Проверка...")
-        self.status_label.setText("Сканирование сети...")
+        self.status_label.setText("Обновление данных...")
         self.status_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #888;")
 
         def check_thread():
-            # Полный скан сети
-            local_ip = get_local_ip()
-            base_ip = ".".join(local_ip.split(".")[:-1])
-            found = []
+            # Обновляем данные существующих катушек
+            updated_holders = []
+            for holder in self.holders:
+                updated_holder = get_holder_data(holder.ip)
+                if updated_holder:
+                    updated_holders.append(updated_holder)
+                else:
+                    # Если катушка не отвечает, оставляем старые данные
+                    updated_holders.append(holder)
 
-            def check_ip_port(ip, port):
-                try:
-                    response = requests.get(f"http://{ip}:{port}/data", timeout=SCAN_TIMEOUT)
-                    data = response.json()
-                    name = data.get('name', '')
-                    if 'net' in data and name.upper().startswith(HOLDER_PREFIX):
-                        holder = SpoolHolder(
-                            ip=f"{ip}:{port}",
-                            name=name,
-                            net=data.get('net', 0),
-                            gross=data.get('gross', 0),
-                            filament_id=data.get('filament_id', ''),
-                            material=data.get('material', ''),
-                            manufacturer=data.get('manufacturer', ''),
-                            diameter=data.get('diameter', 1.75),
-                            density=data.get('density', 1.24),
-                            weight=data.get('weight', 1000.0),
-                        )
-                        found.append(holder)
-                except:
-                    pass
-
-            threads = []
-            for i in range(1, 255):
-                ip = f"{base_ip}.{i}"
-                for port in ESP32_PORTS:
-                    t = threading.Thread(target=check_ip_port, args=(ip, port))
-                    t.start()
-                    threads.append(t)
-            for t in threads:
-                t.join()
+            # Если катушек нет, делаем быстрое сканирование популярных IP
+            if not updated_holders:
+                # Пробуем популярные подсети и IP адреса
+                common_targets = [
+                    "192.168.1.12", "192.168.1.10", "192.168.1.11", "192.168.1.1",
+                    "192.168.0.12", "192.168.0.10", "192.168.0.11", "192.168.0.1",
+                    "10.0.0.12", "10.0.0.10", "10.0.0.11", "10.0.0.1"
+                ]
+                
+                for ip in common_targets:
+                    for port in ESP32_PORTS:
+                        holder = get_holder_data(f"{ip}:{port}")
+                        if holder:
+                            updated_holders.append(holder)
+                            break  # Нашли катушку, можно остановиться
 
             # Ищем активный gcode
             filepath, mtime = find_active_gcode()
@@ -467,7 +529,7 @@ class FilamentCheckerWidget(QWidget):
                     self.last_file = filepath
                     self.last_mtime = mtime
 
-            self.signals.holders_found.emit(found)
+            self.signals.holders_found.emit(updated_holders)
 
         threading.Thread(target=check_thread, daemon=True).start()
 
@@ -511,8 +573,8 @@ class FilamentCheckerWidget(QWidget):
                     self.holder_combo.setItemText(i, f"{self.selected_holder.name} ({self.selected_holder.net}г)")
                     break
 
-        # Вес и длина
-        weight_length_text = ""
+        # Только длина внизу
+        length_text = ""
         if self.selected_holder and available > 0:
             density = self.selected_holder.density  # г/см³
             diameter = self.selected_holder.diameter  # мм
@@ -526,9 +588,9 @@ class FilamentCheckerWidget(QWidget):
             volume_cm3 = available / density  # см³
             length_cm = volume_cm3 / area_cm2  # см
             length_m = length_cm / 100.0  # см -> м
-            weight_length_text = f"Вес: {available:.1f}г | Длина: ~{length_m:.1f}м"
+            length_text = f"Длина: ~{length_m:.1f}м"
 
-        self.weight_length_label.setText(weight_length_text)
+        self.length_label.setText(length_text)
 
         # Расчет процента от начального веса филамента (из профиля ESP32)
         initial_weight = self.selected_holder.weight if self.selected_holder else 1000.0
