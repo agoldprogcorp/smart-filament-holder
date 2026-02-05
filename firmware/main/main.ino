@@ -472,6 +472,16 @@ void setup() {
             String id = value.substring(idx, endIdx);
             bool success = writeNfcData(id);
             Serial.printf("[NFC] Запись %s\n", success ? "успешна" : "неудачна");
+            
+            // Отправляем ответ в приложение через DB_SYNC характеристику
+            String response = "{\"cmd\":\"write_nfc_response\",\"success\":";
+            response += success ? "true" : "false";
+            response += ",\"id\":\"";
+            response += id;
+            response += "\"}";
+            pDbSyncChar->setValue(response.c_str());
+            pDbSyncChar->notify();
+            Serial.printf("[BLE] Отправлен ответ: %s\n", response.c_str());
           }
         }
       }
@@ -632,18 +642,6 @@ void setup() {
 void loop() {
   lv_tick_inc(5);  // Добавляем 5ms к таймеру LVGL
   lv_timer_handler();
-
-  // ТЕСТ: Прямой вызов функции тачскрина каждые 2 секунды
-  static unsigned long lastTouchTest = 0;
-  if (millis() - lastTouchTest > 2000) {
-    lastTouchTest = millis();
-
-    lv_indev_data_t test_data;
-    my_touchpad_read(NULL, &test_data);
-
-    Serial.printf("[TEST] Result: state=%d, x=%d, y=%d\n",
-                  test_data.state, test_data.point.x, test_data.point.y);
-  }
   
   static unsigned long lastWeightUpdate = 0;
   static unsigned long lastNfcCheck = 0;
@@ -1404,15 +1402,12 @@ void checkNFC() {
 
       if (filamentId.length() > 0) {
         loadFilamentProfile(filamentId);
-        if (profile_loaded) {
-          transitionToState(STATE_RUNNING);
-          Serial.println("[UI] Профиль загружен через NFC, переход в RUNNING");
-          load_screen(6);
-          lastNfcUid = "";
-        } else {
+        // loadFilamentProfile() уже делает переход в STATE_RUNNING и load_screen(6)
+        // Не дублируем логику здесь
+        if (!profile_loaded) {
           Serial.println("[NFC] Профиль не найден в базе данных");
-          lastNfcUid = "";
         }
+        lastNfcUid = "";
       } else {
         Serial.println("[NFC] Не удалось прочитать данные с карты");
         lastNfcUid = "";
@@ -1963,7 +1958,12 @@ bool writeNfcData(String filamentId) {
   // Пробуем обнаружить карту несколько раз
   bool cardFound = false;
 
-  for (int attempt = 0; attempt < 3 && !cardFound; attempt++) {
+  for (int attempt = 0; attempt < 5 && !cardFound; attempt++) {
+    if (attempt > 0) {
+      Serial.printf("[NFC] Попытка %d/5...\n", attempt + 1);
+      delay(100);  // Пауза между попытками
+    }
+    
     byte atqa[2];
     byte atqaLen = sizeof(atqa);
 
@@ -1973,10 +1973,6 @@ bool writeNfcData(String filamentId) {
     } else if (rfid.PICC_IsNewCardPresent()) {
       cardFound = true;
       Serial.println("[NFC] Обнаружена новая карта");
-    }
-
-    if (!cardFound) {
-      delay(50);
     }
   }
 
@@ -2132,6 +2128,7 @@ void touch_read() {
 void my_touchpad_read(lv_indev_t *indev_drv, lv_indev_data_t *data) {
   static unsigned long lastDebug = 0;
   static unsigned long callCount = 0;
+  static bool lastTouched = false;
   
   callCount++;
   
@@ -2157,14 +2154,19 @@ void my_touchpad_read(lv_indev_t *indev_drv, lv_indev_data_t *data) {
       y = ((data_raw[3] & 0x0F) << 8) | data_raw[4];
       touched = true;
       
-      Serial.printf("[TOUCH] DETECTED! X=%d Y=%d Points=%d\n", x, y, points);
+      // Логируем только первое касание (не каждый кадр)
+      if (!lastTouched) {
+        Serial.printf("[TOUCH] DETECTED! X=%d Y=%d\n", x, y);
+      }
     }
   }
   
-  // Периодический дебаг каждые 5 секунд
-  if (millis() - lastDebug > 5000) {
+  lastTouched = touched;
+  
+  // Периодический дебаг каждые 10 секунд (уменьшено с 5)
+  if (millis() - lastDebug > 10000) {
     lastDebug = millis();
-    Serial.printf("[TOUCH] Polling active, calls: %lu, touched: %d\n", callCount, touched);
+    Serial.printf("[TOUCH] Polling: %lu calls\n", callCount);
   }
 
   if (touched) {
@@ -2422,4 +2424,3 @@ bool addProfileToDatabase(String profileJson) {
   Serial.printf("[DB] Профиль %s добавлен в базу\n", id.c_str());
   return true;
 }
-
