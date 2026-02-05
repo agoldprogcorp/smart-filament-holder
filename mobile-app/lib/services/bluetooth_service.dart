@@ -379,17 +379,8 @@ class BluetoothService extends ChangeNotifier {
 
   void _onDbSyncReceived(List<int> value) {
     try {
-      debugPrint('[BLE] ===== DB SYNC RECEIVED =====');
-      debugPrint('[BLE] Raw bytes length: ${value.length}');
-      
       String jsonStr = utf8.decode(value);
-      debugPrint('[BLE] Decoded string length: ${jsonStr.length} bytes');
-      debugPrint('[BLE] Full message: $jsonStr'); // ДОБАВЛЕНО: полное сообщение
-      
       Map<String, dynamic> data = json.decode(jsonStr);
-      debugPrint('[BLE] Parsed JSON successfully');
-      debugPrint('[BLE] CMD: ${data['cmd']}');
-      debugPrint('[BLE] Keys: ${data.keys.toList()}');
       
       if (data['cmd'] == 'database_chunk') {
         debugPrint('[BLE] Chunk ${data['index']}/${data['total']}');
@@ -434,18 +425,9 @@ class BluetoothService extends ChangeNotifier {
         }
         _addProfileCompleter = null;  // Очищаем после использования
       } else if (data['cmd'] == 'write_nfc_response') {
-        debugPrint('[BLE] ===== NFC WRITE RESPONSE =====');
-        debugPrint('[BLE] Success: ${data['success']}');
-        debugPrint('[BLE] ID: ${data['id']}');
-        debugPrint('[BLE] Completer exists: ${_writeNfcCompleter != null}');
-        debugPrint('[BLE] Completer completed: ${_writeNfcCompleter?.isCompleted}');
-        
         // Проверяем что Completer существует и не завершён
         if (_writeNfcCompleter != null && !_writeNfcCompleter!.isCompleted) {
-          debugPrint('[BLE] Completing NFC write with: ${data['success'] == true}');
           _writeNfcCompleter!.complete(data['success'] == true);
-        } else {
-          debugPrint('[BLE] WARNING: Cannot complete - completer is null or already completed');
         }
         _writeNfcCompleter = null;  // Очищаем после использования
       } else {
@@ -633,11 +615,6 @@ class BluetoothService extends ChangeNotifier {
     if (_cmdChar == null) return false;
     
     try {
-      debugPrint('[BLE] ===== STARTING NFC WRITE =====');
-      debugPrint('[BLE] Profile ID: $profileId');
-      debugPrint('[BLE] DB Sync char exists: ${_dbSyncChar != null}');
-      debugPrint('[BLE] DB Sync subscription exists: ${_dbSyncSubscription != null}');
-      
       // Создаём Completer для ожидания ответа от ESP32
       _writeNfcCompleter = Completer<bool>();
       
@@ -647,28 +624,17 @@ class BluetoothService extends ChangeNotifier {
       };
       
       String cmdJson = json.encode(cmd);
-      debugPrint('[BLE] Sending command: $cmdJson');
-      
       await _cmdChar!.write(utf8.encode(cmdJson), withoutResponse: false);
-      debugPrint('[BLE] Command sent successfully');
       
-      // Ждём ответ (timeout 15 секунд - увеличиваем время)
+      // Ждём ответ (timeout 15 секунд)
       final success = await _writeNfcCompleter!.future.timeout(
         const Duration(seconds: 15),
-        onTimeout: () {
-          debugPrint('[BLE] ===== NFC WRITE TIMEOUT =====');
-          debugPrint('[BLE] No response received in 15 seconds');
-          return false;
-        },
+        onTimeout: () => false,
       );
       
-      debugPrint('[BLE] ===== NFC WRITE COMPLETED =====');
-      debugPrint('[BLE] Final result: $success');
       return success;
-    } catch (e, stackTrace) {
-      debugPrint('[BLE] ===== NFC WRITE ERROR =====');
-      debugPrint('[BLE] Error: $e');
-      debugPrint('[BLE] Stack: $stackTrace');
+    } catch (e) {
+      debugPrint('[BLE] NFC write error: $e');
       _writeNfcCompleter = null;
       return false;
     }

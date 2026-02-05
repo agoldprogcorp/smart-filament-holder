@@ -1102,7 +1102,6 @@ void load_screen(int screen_num) {
     case 6:
       lv_scr_load(screen_running);
       // Обновляем все виджеты при загрузке экрана
-      Serial.println("[DEBUG] Экран 6 загружен, обновляем виджеты...");
       update_material_and_manufacturer();  // ВАЖНО: обновляем материал/производителя
       update_weight(currentWeight);
       update_percent(current_percent);
@@ -1112,7 +1111,6 @@ void load_screen(int screen_num) {
   }
   
   // НЕ вызываем lv_refr_now() - LVGL обновляется автоматически в loop()
-  Serial.printf("[DEBUG] Экран %d загружен\n", screen_num);
 }
 
 // ============================================
@@ -1597,7 +1595,6 @@ void loadFilamentProfile(String filamentId) {
     // UI FEEDBACK: Показываем сообщение пользователю
     if (currentState == STATE_WAIT_NFC) {
       Serial.println("[UI] NFC карта не распознана - профиль не найден в базе");
-      // TODO: Можно добавить временное сообщение на экране
     }
     return;
   }

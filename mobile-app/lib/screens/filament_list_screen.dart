@@ -456,7 +456,6 @@ class _FilamentTileState extends State<_FilamentTile> {
     // Показываем диалог ожидания записи ПЕРЕД отправкой команды
     BuildContext? dialogContext;
     if (context.mounted) {
-      debugPrint('[UI] Showing NFC write dialog');
       showDialog(
         context: context,
         barrierDismissible: false, // Не позволяем закрыть до завершения
@@ -488,27 +487,22 @@ class _FilamentTileState extends State<_FilamentTile> {
       );
     }
 
-    debugPrint('[UI] Starting NFC write for: ${filament.id}');
     // Отправляем команду записи и ждём реальный ответ
     final success = await bt.writeNFC(filament.id);
-    debugPrint('[UI] NFC write completed with result: $success');
 
     // Закрываем диалог ожидания используя сохраненный контекст
     if (dialogContext != null && dialogContext!.mounted) {
-      debugPrint('[UI] Closing NFC dialog');
       Navigator.of(dialogContext!).pop();
     } else {
-      debugPrint('[UI] WARNING: Dialog context not available, trying rootNavigator');
       try {
         Navigator.of(context, rootNavigator: true).pop();
       } catch (e) {
-        debugPrint('[UI] Failed to close dialog: $e');
+        // Ignore dialog close errors
       }
     }
 
     // Показываем результат через сохраненный ScaffoldMessenger
     try {
-      debugPrint('[UI] Showing result snackbar: $success');
       scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text(success 
@@ -519,8 +513,7 @@ class _FilamentTileState extends State<_FilamentTile> {
         ),
       );
     } catch (e) {
-      debugPrint('[UI] Failed to show snackbar: $e');
-      debugPrint('[UI] NFC write result: ${success ? "SUCCESS" : "FAILED"}');
+      // Ignore snackbar errors
     }
   }
 }
