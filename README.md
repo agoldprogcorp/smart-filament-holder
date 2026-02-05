@@ -1,4 +1,4 @@
-# Smart Filament Holder
+# Filamind
 
 IoT система мониторинга филамента для 3D-печати с автоматическим расчётом остатка и проверкой достаточности материала перед печатью.
 
@@ -156,7 +156,7 @@ flutter build apk --release
 
 Результат: `mobile-app/build/app/outputs/flutter-apk/app-release.apk` (45.9 MB)
 
-Или используйте готовый релиз: FilamentHolderApp.apk
+Или используйте готовый релиз: FilamindApp.apk
 
 ### Зависимости
 
@@ -186,12 +186,12 @@ Windows приложение для интеграции с Creality Print.
 ```bash
 cd desktop-plugin
 pip install -r requirements.txt
-pyinstaller --onefile --noconsole --icon=filament_checker.ico --name FilamentChecker main.py
+pyinstaller --onefile --noconsole --icon=filamind_icon.ico --name FilamindChecker main.py
 ```
 
-Результат: `desktop-plugin/dist/FilamentChecker.exe` (39.8 MB)
+Результат: `desktop-plugin/dist/FilamindChecker.exe` (39.8 MB)
 
-Или используйте готовый релиз: FilamentChecker.exe
+Или используйте готовый релиз: FilamindChecker.exe
 
 ### Принцип работы
 

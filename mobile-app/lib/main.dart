@@ -15,18 +15,18 @@ void main() async {
         ChangeNotifierProvider(create: (_) => BluetoothService()),
         ChangeNotifierProvider(create: (_) => dbService),
       ],
-      child: const FilamentHolderApp(),
+      child: const FilamindApp(),
     ),
   );
 }
 
-class FilamentHolderApp extends StatelessWidget {
-  const FilamentHolderApp({super.key});
+class FilamindApp extends StatelessWidget {
+  const FilamindApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Filament Weight',
+      title: 'Filamind',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),

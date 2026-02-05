@@ -46,7 +46,7 @@ def add_to_startup():
             r"Software\Microsoft\Windows\CurrentVersion\Run",
             0, winreg.KEY_SET_VALUE
         )
-        winreg.SetValueEx(key, "FilamentChecker", 0, winreg.REG_SZ, f'"{exe_path}"')
+        winreg.SetValueEx(key, "FilamindChecker", 0, winreg.REG_SZ, f'"{exe_path}"')
         winreg.CloseKey(key)
         return True
     except:
@@ -60,7 +60,7 @@ def is_in_startup():
             r"Software\Microsoft\Windows\CurrentVersion\Run",
             0, winreg.KEY_READ
         )
-        winreg.QueryValueEx(key, "FilamentChecker")
+        winreg.QueryValueEx(key, "FilamindChecker")
         winreg.CloseKey(key)
         return True
     except:
@@ -274,7 +274,7 @@ class Signals(QObject):
     holders_found = pyqtSignal(list)
 
 
-class FilamentCheckerWidget(QWidget):
+class FilamindCheckerWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.required = 0.0
@@ -291,7 +291,7 @@ class FilamentCheckerWidget(QWidget):
         self.scan_holders()
 
     def init_ui(self):
-        self.setWindowTitle("Filament Checker")
+        self.setWindowTitle("Filamind Checker")
         self.setFixedSize(360, 320)  # Увеличиваем высоту чтобы всё влезло
         self.setWindowFlags(
             Qt.WindowType.WindowStaysOnTopHint |
@@ -346,7 +346,7 @@ class FilamentCheckerWidget(QWidget):
         layout.setSpacing(6)
 
         # Заголовок
-        title = QLabel("Filament Checker")
+        title = QLabel("Filamind Checker")
         title.setStyleSheet("font-size: 14px; color: #888;")
         layout.addWidget(title)
 
@@ -431,7 +431,7 @@ class FilamentCheckerWidget(QWidget):
         pixmap = QPixmap(16, 16)
         pixmap.fill(Qt.GlobalColor.green)
         self.tray.setIcon(QIcon(pixmap))
-        self.tray.setToolTip("Filament Checker")
+        self.tray.setToolTip("Filamind Checker")
         self.tray.show()
 
     def scan_holders(self):
@@ -652,7 +652,7 @@ def main():
     if not is_in_startup():
         add_to_startup()
 
-    widget = FilamentCheckerWidget()
+    widget = FilamindCheckerWidget()
 
     # Показываем только если Creality запущен
     if is_creality_running():

@@ -14,7 +14,7 @@ class HomeScreen extends StatelessWidget {
       builder: (context, bt, _) {
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Filament Weight'),
+            title: const Text('Filamind'),
             actions: [
               IconButton(
                 icon: Icon(bt.isConnected ? Icons.bluetooth_connected : Icons.bluetooth),
