@@ -1949,20 +1949,32 @@ bool writeNfcData(String filamentId) {
   rfid.PCD_Init();
   delay(10);
 
+  // ИСПРАВЛЕНИЕ: Принудительно сбрасываем все карты в поле
+  rfid.PCD_Reset();
+  delay(50);
+  rfid.PCD_Init();
+  delay(10);
+
   // Сбрасываем lastNfcUid чтобы карта могла быть прочитана после записи
   lastNfcUid = "";
 
-  // Пробуем обнаружить карту несколько раз
+  // Пробуем обнаружить карту несколько раз с улучшенной логикой
   bool cardFound = false;
 
   for (int attempt = 0; attempt < 5 && !cardFound; attempt++) {
     if (attempt > 0) {
       Serial.printf("[NFC] Попытка %d/5...\n", attempt + 1);
-      delay(100);  // Пауза между попытками
+      delay(200);  // Увеличиваем паузу между попытками
     }
     
+    // Сначала пробуем разбудить карту
     byte atqa[2];
     byte atqaLen = sizeof(atqa);
+    
+    // Принудительно останавливаем любую активную коммуникацию
+    rfid.PICC_HaltA();
+    rfid.PCD_StopCrypto1();
+    delay(10);
 
     if (rfid.PICC_WakeupA(atqa, &atqaLen) == MFRC522::STATUS_OK) {
       cardFound = true;
@@ -1998,6 +2010,7 @@ bool writeNfcData(String filamentId) {
     success = writeMifareData(filamentId);
   }
 
+  // Мягко останавливаем коммуникацию (как в checkNFC)
   rfid.PICC_HaltA();
   rfid.PCD_StopCrypto1();
 
