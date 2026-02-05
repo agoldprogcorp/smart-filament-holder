@@ -1,0 +1,90 @@
+/*
+ * ===================================
+ * КОНФИГУРАЦИЯ SMART FILAMENT HOLDER
+ * ===================================
+ * 
+ * Скопируйте этот файл в config.h и заполните своими данными!
+ * cp config.h.example config.h
+ */
+
+#ifndef CONFIG_H
+#define CONFIG_H
+
+// ============================================
+// ПИНЫ LCD (GC9A01) - VSPI
+// ============================================
+#define LCD_CS    5
+#define LCD_DC    2
+#define LCD_RST   4
+#define LCD_BL    16
+#define LCD_SCK   18  // VSPI SCK
+#define LCD_MOSI  23  // VSPI MOSI
+
+// ============================================
+// ПИНЫ RC522 (NFC) - HSPI
+// ============================================
+#define RC522_CS   15
+#define RC522_RST  17
+#define RC522_SCK  14  // HSPI SCK
+#define RC522_MOSI 13  // HSPI MOSI
+#define RC522_MISO 12  // HSPI MISO
+
+// ============================================
+// ПИНЫ HX711 (Тензодатчик)
+// ============================================
+#define HX711_DOUT 25
+#define HX711_SCK  26
+
+// ============================================
+// ПИНЫ ТАЧСКРИНА CST816S (I2C)
+// ============================================
+#define TP_SDA    21
+#define TP_SCL    22
+#define TP_INT    19
+#define TP_RST    27
+#define TOUCH_I2C_ADDR 0x15
+
+// ============================================
+// НАСТРОЙКИ ДИСПЛЕЯ
+// ============================================
+#define LCD_WIDTH  240
+#define LCD_HEIGHT 240
+
+// ============================================
+// НАСТРОЙКИ УСТРОЙСТВА
+// ============================================
+#define DEVICE_NAME "FD-01"
+
+// ============================================
+// НАСТРОЙКИ WiFi (ЗАПОЛНИТЕ СВОИМИ ДАННЫМИ!)
+// ============================================
+#define WIFI_SSID "YOUR_WIFI_SSID"
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+#define HTTP_PORT 80
+
+// ============================================
+// НАСТРОЙКИ HX711
+// ============================================
+#define CALIBRATION_FACTOR 170.0f
+#define DEBUG_MODE false  // true = Serial команды, false = реальный HX711
+
+// ============================================
+// BLE UUIDs (НЕ МЕНЯЙТЕ, должны совпадать с приложением!)
+// ============================================
+#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define DATA_CHAR_UUID      "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+#define COMMAND_CHAR_UUID   "beb5483e-36e1-4688-b7f5-ea07361b26a9"
+#define DB_SYNC_CHAR_UUID   "beb5483e-36e1-4688-b7f5-ea07361b26aa"
+
+// ============================================
+// ДОПОЛНИТЕЛЬНЫЕ НАСТРОЙКИ
+// ============================================
+#define MIN_SPOOL_WEIGHT 50.0f
+#define WEIGHT_UPDATE_INTERVAL 300
+#define NFC_CHECK_INTERVAL     200
+#define TIME_UPDATE_INTERVAL   1000
+#define BLE_UPDATE_INTERVAL    1000
+#define WIFI_CONNECT_TIMEOUT   20
+#define BLE_CONNECT_TIMEOUT    15
+
+#endif // CONFIG_H

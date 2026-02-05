@@ -12,11 +12,20 @@ IoT система мониторинга филамента для 3D-печа�
 
 ## Аппаратная часть
 
+Поддерживаются две платформы:
+
+**ESP32-C6** :
 - ESP32-C6 (WiFi 6, BLE 5.0, 160MHz)
 - GC9A01 1.28" 240x240 SPI дисплей + CST816S I2C тачскрин
 - RC522 NFC reader (поддержка MIFARE Classic 1K и NTAG21x)
 - HX711 24-bit ADC + тензодатчик 5kg
 - База данных: 460 профилей филаментов (LittleFS)
+
+**ESP32 WROOM-32U** :
+- ESP32 WROOM-32U (WiFi 4, BLE 4.2, 240MHz)
+- Те же периферийные модули
+- Оптимизированная архитектура с двойным SPI (VSPI для дисплея, HSPI для NFC)
+- Улучшенная производительность благодаря отсутствию конфликтов SPI
 
 ## Функциональность
 
@@ -32,6 +41,11 @@ IoT система мониторинга филамента для 3D-печа�
 
 ## Firmware
 
+Доступны две версии прошивки:
+
+- `firmware/esp32c6/main/` - для ESP32-C6
+- `firmware/esp32_wroom32u/main/` - для ESP32 WROOM-32U
+
 ### Требования
 
 - Arduino IDE 2.x
@@ -40,25 +54,50 @@ IoT система мониторинга филамента для 3D-печа�
 
 ### Настройка платы
 
+**ESP32-C6:**
 ```
 Board: ESP32C6 Dev Module
 Flash Size: 8MB
-Partition Scheme: Huge APP (3MB No OTA/1MB SPIFFS)
+Partition Scheme: Custom
+Upload Speed: 921600
+```
+
+**ESP32 WROOM-32U:**
+```
+Board: ESP32 Dev Module
+Flash Size: 16MB
+Partition Scheme: Custom
 Upload Speed: 921600
 ```
 
 ### Установка
 
+**ESP32-C6:**
 1. Скопировать `firmware/main/config.h.example` → `firmware/main/config.h`
 2. Настроить WiFi credentials и пины в `config.h`
 3. Установить ESP32FS plugin: https://github.com/lorol/arduino-esp32fs-plugin
 4. Загрузить `firmware/main/data/filaments.json` через Tools → ESP32 Sketch Data Upload → LittleFS
 5. Прошить `firmware/main/main.ino` через Upload
 
+**ESP32 WROOM-32U:**
+1. Скопировать `esp32_wroom32u/main/config.h.example` → `esp32_wroom32u/main/config.h`
+2. Настроить WiFi credentials и пины в `config.h`
+3. Установить ESP32FS plugin: https://github.com/lorol/arduino-esp32fs-plugin
+4. Загрузить `esp32_wroom32u/main/data/filaments.json` через Tools → ESP32 Sketch Data Upload → LittleFS
+5. Прошить `esp32_wroom32u/main/main.ino` через Upload
+
 ### Калибровка HX711
 
+**ESP32-C6:**
 ```bash
 # Загрузить firmware/weight_calibrator/weight_calibrator.ino
+# Следовать инструкциям в Serial Monitor (115200 baud)
+# Скопировать CALIBRATION_FACTOR в config.h
+```
+
+**ESP32 WROOM-32U:**
+```bash
+# Загрузить esp32_wroom32u/weight_calibrator/weight_calibrator.ino
 # Следовать инструкциям в Serial Monitor (115200 baud)
 # Скопировать CALIBRATION_FACTOR в config.h
 ```
@@ -177,7 +216,7 @@ HOLDER_PREFIX = "FD"        # Префикс имени устройства
 
 **HX711 не отвечает**: установить `DEBUG_MODE = true` для тестирования без датчика
 
-**Профили не загружаются**: проверить загрузку `filaments.json` через LittleFS Data Upload
+**Профили не загружаются**: проверить загрузку `filaments.json` через ESP32 Sketch Data Upload
 
 **Ошибка компиляции**: использовать Partition Scheme "Huge APP (3MB No OTA/1MB SPIFFS)"
 
