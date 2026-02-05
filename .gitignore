@@ -6,6 +6,8 @@
 *.lst
 .pio/
 firmware/main/config.h
+firmware/esp32c6/main/config.h
+firmware/esp32_wroom32u/main/config.h
 
 # mobile app
 mobile-app/.dart_tool/
